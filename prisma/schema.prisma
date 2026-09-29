@@ -1,0 +1,132 @@
+// Digital Art Museum — data model
+//
+// Provider is SQLite for local development. To deploy on Postgres, change
+// `provider` to "postgresql" and point DATABASE_URL at the server; every field
+// below uses portable scalar types, so no other edits are required.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// A creator: painter, sculptor, architect or workshop.
+model Artist {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  name        String
+  sortName    String?
+  nationality String?
+  birthYear   Int?
+  deathYear   Int?
+  bio         String?
+  artworks    Artwork[]
+
+  @@index([name])
+  @@index([nationality])
+}
+
+/// An artistic movement or period (Renaissance, Baroque, Impressionism...).
+model Movement {
+  id        String    @id @default(cuid())
+  slug      String    @unique
+  name      String
+  startYear Int?
+  endYear   Int?
+  summary   String?
+  artworks  Artwork[]
+
+  @@index([startYear])
+}
+
+/// A free-form descriptor attached to artworks (subject, technique, place).
+model Tag {
+  id       String       @id @default(cuid())
+  slug     String       @unique
+  name     String
+  kind     String       @default("subject")
+  artworks ArtworkTag[]
+}
+
+model ArtworkTag {
+  artworkId String
+  tagId     String
+  artwork   Artwork @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([artworkId, tagId])
+  @@index([tagId])
+}
+
+/// A single object in the museum: painting, sculpture or monument.
+///
+/// Monuments share this table because they carry the same browsing metadata;
+/// they are distinguished by `category` and carry latitude/longitude.
+model Artwork {
+  id       String @id @default(cuid())
+  slug     String @unique
+  title    String
+  /// One of: painting | sculpture | monument | other
+  category String @default("other")
+
+  // Attribution
+  artistId   String?
+  artist     Artist?   @relation(fields: [artistId], references: [id], onDelete: SetNull)
+  artistName String?
+  movementId String?
+  movement   Movement? @relation(fields: [movementId], references: [id], onDelete: SetNull)
+
+  // Dating. `dateText` preserves the source's phrasing ("c. 1503-1519"),
+  // while the numeric bounds make range queries and timelines possible.
+  dateText  String?
+  yearStart Int?
+  yearEnd   Int?
+
+  // Physical description
+  medium         String?
+  dimensions     String?
+  culture        String?
+  classification String?
+  description    String?
+
+  // Where it lives
+  museum     String?
+  department String?
+  city       String?
+  country    String?
+  latitude   Float?
+  longitude  Float?
+
+  // Imagery
+  imageUrl String?
+  thumbUrl String?
+  /// IIIF image base URL, when the source exposes one, for deep zoom.
+  iiifBaseUrl String?
+  colorHex    String?
+
+  // Provenance of the record itself
+  source         String
+  sourceId       String
+  sourceUrl      String?
+  creditLine     String?
+  isPublicDomain Boolean @default(false)
+  isHighlight    Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tags ArtworkTag[]
+
+  @@unique([source, sourceId])
+  @@index([category])
+  @@index([yearStart])
+  @@index([artistName])
+  @@index([museum])
+  @@index([country])
+  @@index([isHighlight])
+  @@index([title])
+}
