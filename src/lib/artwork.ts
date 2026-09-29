@@ -144,16 +144,110 @@ export const formatYear = (
   return `${label(yearStart)}–${label(yearEnd)}`;
 };
 
+/** Decode the HTML entities that museum APIs leave in their text fields. */
+const decodeEntities = (value: string) =>
+  value
+    .replace(/&nbsp;/g, " ")
+    .replace(/&quot;/g, '"')
+    .replace(/&#0*39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&#(\d+);/g, (_, code: string) =>
+      String.fromCodePoint(Number(code)),
+    )
+    .replace(/&#x([0-9a-f]+);/gi, (_, code: string) =>
+      String.fromCodePoint(parseInt(code, 16)),
+    )
+    // Ampersand last, so a literal "&amp;lt;" never decodes twice.
+    .replace(/&amp;/g, "&");
+
 /** Collapse whitespace and strip markup that leaks out of source descriptions. */
 export const cleanText = (value: string | null | undefined): string | null => {
   if (!value) return null;
-  const stripped = value
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
+  const stripped = decodeEntities(value.replace(/<[^>]*>/g, " "))
     .replace(/\s+/g, " ")
     .trim();
   return stripped || null;
+};
+
+/**
+ * Clean long-form prose while keeping its paragraph structure.
+ *
+ * Curatorial notes and provenance run to several paragraphs; `cleanText`
+ * would flatten them into one unreadable block, so block-level tags become
+ * newlines before the rest of the markup is stripped.
+ */
+export const cleanProse = (value: string | null | undefined): string | null => {
+  if (!value) return null;
+
+  const withBreaks = value
+    .replace(/<\/(p|div|li|h[1-6])>/gi, "\n\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]*>/g, "");
+
+  const paragraphs = decodeEntities(withBreaks)
+    .split(/\n\s*\n/)
+    .map((block) => block.replace(/[ \t]+/g, " ").replace(/\s*\n\s*/g, "\n").trim())
+    .filter(Boolean);
+
+  return paragraphs.length ? paragraphs.join("\n\n") : null;
+};
+
+/**
+ * Format a recorded sale.
+ *
+ * Currency codes come from Wikidata and are not guaranteed to be valid ISO
+ * 4217, so an unknown code falls back to a plain number followed by the code
+ * rather than throwing.
+ */
+export const formatPrice = (
+  amount: number | null | undefined,
+  currency: string | null | undefined,
+): string | null => {
+  if (amount == null || !Number.isFinite(amount)) return null;
+
+  if (currency && /^[A-Z]{3}$/.test(currency)) {
+    try {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency,
+        maximumFractionDigits: 0,
+      }).format(amount);
+    } catch {
+      // Fall through to the neutral format below.
+    }
+  }
+
+  const number = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(
+    amount,
+  );
+  return currency ? `${number} ${currency}` : number;
+};
+
+/** Short form for tight spaces: "$450M", "€175M". */
+export const formatPriceCompact = (
+  amount: number | null | undefined,
+  currency: string | null | undefined,
+): string | null => {
+  if (amount == null || !Number.isFinite(amount)) return null;
+
+  if (currency && /^[A-Z]{3}$/.test(currency)) {
+    try {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency,
+        notation: "compact",
+        maximumFractionDigits: 1,
+      }).format(amount);
+    } catch {
+      // Fall through to the neutral format below.
+    }
+  }
+
+  const number = new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(amount);
+  return currency ? `${number} ${currency}` : number;
 };

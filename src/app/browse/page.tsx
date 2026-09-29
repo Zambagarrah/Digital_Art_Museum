@@ -11,6 +11,7 @@ const SORTS = [
   { value: "oldest", label: "Oldest first" },
   { value: "newest", label: "Newest first" },
   { value: "title", label: "A–Z" },
+  { value: "price", label: "Highest sale" },
 ] as const;
 
 const headingFor = (category: string | null, q: string) => {

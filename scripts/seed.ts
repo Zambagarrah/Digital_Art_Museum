@@ -1,9 +1,17 @@
+import { setDefaultResultOrder } from "node:dns";
 import { PrismaClient } from "../src/generated/prisma";
 import { slugify } from "../src/lib/artwork";
 import { fetchArtInstitute } from "./ingest/art-institute";
+import { fetchMarketSales } from "./ingest/market";
 import { fetchMet } from "./ingest/met";
 import { fetchMonuments } from "./ingest/wikidata";
+import { enrichWithWikipedia } from "./ingest/wikipedia";
 import type { NormalisedArtwork } from "./ingest/shared";
+
+// Node resolves AAAA records first, but several Wikimedia hosts are reachable
+// here only over IPv4 — without this every request to them fails with
+// ENETUNREACH, which the fetch retry loop would silently swallow.
+setDefaultResultOrder("ipv4first");
 
 const prisma = new PrismaClient();
 
@@ -63,6 +71,27 @@ const upsertTags = async (works: NormalisedArtwork[]) => {
   return lookup;
 };
 
+/**
+ * Drop rows a source no longer returns, so the catalogue mirrors the latest
+ * ingest rather than accumulating every object ever fetched. Sources that
+ * returned nothing are skipped — a failed fetch must not wipe its collection.
+ */
+const prune = async (works: NormalisedArtwork[]) => {
+  const keep = new Map<string, string[]>();
+  for (const work of works) {
+    const ids = keep.get(work.source) ?? [];
+    ids.push(work.sourceId);
+    keep.set(work.source, ids);
+  }
+
+  for (const [source, sourceIds] of keep) {
+    const { count } = await prisma.artwork.deleteMany({
+      where: { source, sourceId: { notIn: sourceIds } },
+    });
+    if (count > 0) console.log(`  Pruned ${count} stale ${source} rows`);
+  }
+};
+
 const persist = async (works: NormalisedArtwork[]) => {
   const artists = await upsertArtists(works);
   const tags = await upsertTags(works);
@@ -105,22 +134,30 @@ const persist = async (works: NormalisedArtwork[]) => {
   }
 
   process.stdout.write(`\r  Saved ${written}/${works.length}\n`);
+
+  await prune(works);
 };
 
 const main = async () => {
   const aicLimit = numericArg("aic", 1200);
   const metLimit = numericArg("met", 600);
   const monumentLimit = numericArg("monuments", 400);
+  const marketLimit = numericArg("market", 200);
 
   console.log("Fetching from public museum APIs…");
 
-  const [aic, met, monuments] = await Promise.all([
+  const [aic, met, monuments, market] = await Promise.all([
     fetchArtInstitute(aicLimit),
     fetchMet(metLimit),
     fetchMonuments(monumentLimit),
+    fetchMarketSales(marketLimit),
   ]);
 
-  const works = deduplicateSlugs([...aic, ...met, ...monuments]);
+  const works = deduplicateSlugs([...aic, ...met, ...monuments, ...market]);
+
+  console.log("\nAdding context from Wikipedia…");
+  await enrichWithWikipedia(works);
+
   console.log(`\nNormalised ${works.length} objects. Writing to the database…`);
 
   await persist(works);
@@ -130,10 +167,21 @@ const main = async () => {
     _count: { _all: true },
   });
 
+  const [interpreted, priced, provenanced] = await Promise.all([
+    prisma.artwork.count({ where: { interpretation: { not: null } } }),
+    prisma.artwork.count({ where: { salePrice: { not: null } } }),
+    prisma.artwork.count({ where: { provenance: { not: null } } }),
+  ]);
+
   console.log("\nCatalogue now holds:");
   for (const row of byCategory) {
     console.log(`  ${row.category.padEnd(10)} ${row._count._all}`);
   }
+
+  console.log("\nEnrichment:");
+  console.log(`  interpretation  ${interpreted}`);
+  console.log(`  provenance      ${provenanced}`);
+  console.log(`  recorded sale   ${priced}`);
 };
 
 main()

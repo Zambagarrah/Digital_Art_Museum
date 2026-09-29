@@ -7,10 +7,12 @@ gallery.
 ## What's here
 
 - **Browse & search** across every object with faceted filters (type,
-  collection, era) and four sort orders.
+  collection, era) and five sort orders.
 - **Artwork pages** with full wall-label metadata, click-to-zoom imagery
   (IIIF-backed where the source supports it) and related works.
-- **Aggregation pipeline** that normalises records from three public APIs into
+- **Context & provenance** — curatorial or encyclopedic prose explaining each
+  work, plus ownership history where the museum publishes it.
+- **Aggregation pipeline** that normalises records from four public APIs into
   a single local catalogue.
 
 ## Sources
@@ -20,13 +22,32 @@ gallery.
 | [Art Institute of Chicago](https://api.artic.edu/docs/) | Paintings, sculpture, decorative arts | No |
 | [Metropolitan Museum of Art](https://metmuseum.github.io/) | Encyclopedic collection | No |
 | [Wikidata](https://query.wikidata.org/) | UNESCO World Heritage monuments | No |
+| [Wikidata (P2284)](https://query.wikidata.org/) | Paintings with a public auction record | No |
+
+## On prices
+
+Museum-held works have no market price. They are inalienable, never offered for
+sale, and no institution publishes an appraisal — so this catalogue **does not
+estimate or invent valuations**.
+
+Instead it shows two things that are real:
+
+- **Provenance and credit line** — the documented ownership chain and how the
+  museum acquired the work, for the ~830 objects where that is published.
+- **Last recorded sale** — an actual hammer price, shown only for the 96
+  paintings that carry a cited public auction record in Wikidata, each linked
+  back to its source. This is presented as a historical sale, never as a current
+  valuation or appraisal.
+
+Sorting by *Highest sale* filters to those priced works, since the rest have no
+price to rank by.
 
 ## Getting started
 
 ```bash
 npm install
 npm run db:push     # create the SQLite schema
-npm run db:seed     # pull ~2,000 works from the public APIs
+npm run db:seed     # pull ~2,100 works from the public APIs
 npm run dev
 ```
 
@@ -35,11 +56,27 @@ Then open http://localhost:3000.
 The seed script accepts per-source limits:
 
 ```bash
-npm run db:seed -- --aic=3000 --met=1500 --monuments=800
+npm run db:seed -- --aic=3000 --met=1500 --monuments=800 --market=200
 ```
 
 It upserts on `(source, sourceId)`, so re-running it refreshes existing records
-rather than duplicating them.
+rather than duplicating them, then prunes rows a source no longer returns so the
+catalogue mirrors the latest ingest.
+
+### Context enrichment
+
+The Art Institute publishes curatorial descriptions; the Met and Wikidata do
+not. For those, the seed resolves each object's Wikidata id to an English
+Wikipedia article and stores its lead section. Museum prose always wins — a
+curator writing about their own holding beats a general encyclopedia.
+
+Because this depends on a third-party API mid-run, it can be re-run on its own
+without re-fetching the museum sources:
+
+```bash
+npm run db:enrich
+```
+
 
 ## Architecture
 
@@ -55,6 +92,7 @@ src/
     prisma.ts         Database client singleton
 scripts/
   seed.ts             Orchestrates ingestion and persistence
+  enrich.ts           Re-runs the Wikipedia context pass over existing rows
   ingest/             One adapter per source, each normalising to a shared shape
 prisma/schema.prisma  Data model
 ```

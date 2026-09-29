@@ -14,7 +14,7 @@ SELECT ?item ?itemLabel ?itemDescription ?image ?coord ?inception ?countryLabel 
   OPTIONAL { ?item wdt:P571 ?inception . }
   OPTIONAL { ?item wdt:P17 ?country . }
   OPTIONAL { ?item wdt:P149 ?style . }
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en,fr,de,nl,it,es". }
 }
 LIMIT %LIMIT%
 `;
@@ -69,6 +69,7 @@ export const fetchMonuments = async (limit: number): Promise<NormalisedArtwork[]
         source: "wikidata",
         sourceId: qid,
         sourceUrl: entity,
+        wikidataId: qid,
         description: row.itemDescription?.value,
         dateText: inception ?? null,
         classification: row.styleLabel?.value ?? "monument",

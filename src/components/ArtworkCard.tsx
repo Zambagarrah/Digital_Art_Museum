@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatYear } from "@/lib/artwork";
+import { formatPriceCompact, formatYear } from "@/lib/artwork";
 import { imageSrc } from "@/lib/images";
 import type { ArtworkCard as ArtworkCardData } from "@/lib/queries";
 
@@ -18,6 +18,7 @@ type Props = {
 export const ArtworkCard = ({ artwork, priority = false }: Props) => {
   const year = artwork.dateText ?? formatYear(artwork.yearStart, artwork.yearEnd);
   const thumb = imageSrc(artwork.thumbUrl);
+  const price = formatPriceCompact(artwork.salePrice, artwork.saleCurrency);
 
   return (
     <Link
@@ -40,6 +41,13 @@ export const ArtworkCard = ({ artwork, priority = false }: Props) => {
             />
           ) : (
             <div className="aspect-[4/5] w-full" />
+          )}
+
+          {price && (
+            <span className="absolute right-2 top-2 rounded-full bg-black/75 px-2.5 py-1 text-[11px] font-medium tabular-nums text-accent backdrop-blur-sm">
+              <span className="sr-only">Last sold for </span>
+              {price}
+            </span>
           )}
         </div>
 

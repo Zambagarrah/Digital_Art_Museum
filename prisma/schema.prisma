@@ -93,6 +93,12 @@ model Artwork {
   classification String?
   description    String?
 
+  // What the work means. `interpretation` is long-form curatorial or
+  // encyclopedic prose, always attributed so the reader can weigh the source.
+  interpretation       String?
+  interpretationSource String?
+  interpretationUrl    String?
+
   // Where it lives
   museum     String?
   department String?
@@ -112,9 +118,23 @@ model Artwork {
   source         String
   sourceId       String
   sourceUrl      String?
+  wikidataId     String?
   creditLine     String?
+  /// Ownership history from the artist's studio onward, as published by the
+  /// holding museum. Frequently cites historical sale prices with archival
+  /// references.
+  provenance     String?
   isPublicDomain Boolean @default(false)
   isHighlight    Boolean @default(false)
+
+  // A recorded sale. Only ever populated from a cited public record — museum
+  // holdings are not for sale and carry no market value, so this stays null
+  // for the overwhelming majority of works.
+  salePrice     Float?
+  saleCurrency  String?
+  saleDate      String?
+  saleYear      Int?
+  saleSourceUrl String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -129,4 +149,6 @@ model Artwork {
   @@index([country])
   @@index([isHighlight])
   @@index([title])
+  @@index([wikidataId])
+  @@index([salePrice])
 }

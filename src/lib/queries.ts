@@ -22,7 +22,7 @@ export type BrowseQuery = {
   artist: string | null;
   from: number | null;
   to: number | null;
-  sort: "relevance" | "oldest" | "newest" | "title";
+  sort: "relevance" | "oldest" | "newest" | "title" | "price";
   page: number;
 };
 
@@ -43,7 +43,9 @@ export const parseQuery = (params: SearchParams): BrowseQuery => {
     from: toInt(params.from),
     to: toInt(params.to),
     sort:
-      sort === "oldest" || sort === "newest" || sort === "title" ? sort : "relevance",
+      sort === "oldest" || sort === "newest" || sort === "title" || sort === "price"
+        ? sort
+        : "relevance",
     page: Math.max(1, toInt(params.page) ?? 1),
   };
 };
@@ -97,6 +99,11 @@ const buildWhere = (query: BrowseQuery): Prisma.ArtworkWhereInput => {
   if (query.from !== null) filters.push({ yearEnd: { gte: query.from } });
   if (query.to !== null) filters.push({ yearStart: { lte: query.to } });
 
+  // Sorting by price restricts to works that have one. Beyond matching what the
+  // reader expects, it keeps the ordering portable: SQLite sorts NULLs last on
+  // a descending sort while Postgres sorts them first.
+  if (query.sort === "price") filters.push({ salePrice: { not: null } });
+
   return { AND: filters };
 };
 
@@ -108,6 +115,8 @@ const buildOrderBy = (query: BrowseQuery): Prisma.ArtworkOrderByWithRelationInpu
       return [{ yearStart: "desc" }, { title: "asc" }];
     case "title":
       return [{ title: "asc" }];
+    case "price":
+      return [{ salePrice: "desc" }, { title: "asc" }];
     default:
       // "Relevance" without a search engine: highlights first, then completeness.
       return [{ isHighlight: "desc" }, { isPublicDomain: "desc" }, { title: "asc" }];
@@ -126,6 +135,8 @@ export const CARD_FIELDS = {
   thumbUrl: true,
   colorHex: true,
   museum: true,
+  salePrice: true,
+  saleCurrency: true,
 } satisfies Prisma.ArtworkSelect;
 
 export type ArtworkCard = Prisma.ArtworkGetPayload<{ select: typeof CARD_FIELDS }>;

@@ -18,7 +18,9 @@ const FIELDS = [
   "credit_line",
   "department_title",
   "term_titles",
+  "description",
   "short_description",
+  "provenance_text",
   "color",
 ].join(",");
 
@@ -39,7 +41,9 @@ type AicArtwork = {
   credit_line: string | null;
   department_title: string | null;
   term_titles: string[] | null;
+  description: string | null;
   short_description: string | null;
+  provenance_text: string | null;
   color: { h: number; s: number; l: number } | null;
 };
 
@@ -87,6 +91,11 @@ const toArtwork = (item: AicArtwork): NormalisedArtwork | null => {
     culture: item.place_of_origin,
     classification: item.classification_title ?? item.artwork_type_title,
     description: item.short_description,
+    interpretation: item.description,
+    interpretationSource: item.description ? "Art Institute of Chicago" : null,
+    interpretationUrl: item.description
+      ? `https://www.artic.edu/artworks/${item.id}`
+      : null,
     museum: "Art Institute of Chicago",
     department: item.department_title,
     city: "Chicago",
@@ -96,6 +105,7 @@ const toArtwork = (item: AicArtwork): NormalisedArtwork | null => {
     iiifBaseUrl,
     colorHex: hslToHex(item.color),
     creditLine: item.credit_line,
+    provenance: item.provenance_text,
     isPublicDomain: Boolean(item.is_public_domain),
     tags: item.term_titles ?? [],
   });

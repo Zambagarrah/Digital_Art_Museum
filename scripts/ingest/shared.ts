@@ -1,4 +1,4 @@
-import { classify, cleanText, parseYearRange, slugify } from "../../src/lib/artwork";
+import { classify, cleanProse, cleanText, parseYearRange, slugify } from "../../src/lib/artwork";
 
 /** The shape every source adapter normalises to before it reaches the database. */
 export type NormalisedArtwork = {
@@ -14,6 +14,9 @@ export type NormalisedArtwork = {
   culture: string | null;
   classification: string | null;
   description: string | null;
+  interpretation: string | null;
+  interpretationSource: string | null;
+  interpretationUrl: string | null;
   museum: string | null;
   department: string | null;
   city: string | null;
@@ -27,7 +30,14 @@ export type NormalisedArtwork = {
   source: string;
   sourceId: string;
   sourceUrl: string | null;
+  wikidataId: string | null;
   creditLine: string | null;
+  provenance: string | null;
+  salePrice: number | null;
+  saleCurrency: string | null;
+  saleDate: string | null;
+  saleYear: number | null;
+  saleSourceUrl: string | null;
   isPublicDomain: boolean;
   isHighlight: boolean;
   tags: string[];
@@ -58,6 +68,9 @@ export const makeArtwork = (
     culture: cleanText(input.culture),
     classification: cleanText(input.classification),
     description: cleanText(input.description),
+    interpretation: cleanProse(input.interpretation),
+    interpretationSource: input.interpretationSource ?? null,
+    interpretationUrl: input.interpretationUrl ?? null,
     museum: input.museum ?? null,
     department: cleanText(input.department),
     city: input.city ?? null,
@@ -71,7 +84,14 @@ export const makeArtwork = (
     source: input.source,
     sourceId: input.sourceId,
     sourceUrl: input.sourceUrl ?? null,
+    wikidataId: input.wikidataId ?? null,
     creditLine: cleanText(input.creditLine),
+    provenance: cleanProse(input.provenance),
+    salePrice: input.salePrice ?? null,
+    saleCurrency: input.saleCurrency ?? null,
+    saleDate: input.saleDate ?? null,
+    saleYear: input.saleYear ?? null,
+    saleSourceUrl: input.saleSourceUrl ?? null,
     isPublicDomain: input.isPublicDomain ?? false,
     isHighlight: input.isHighlight ?? false,
     tags: (input.tags ?? []).map((t) => t.trim()).filter(Boolean),

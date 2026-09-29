@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ArtworkGrid } from "@/components/ArtworkCard";
 import { ArtworkViewer } from "@/components/ArtworkViewer";
-import { formatYear } from "@/lib/artwork";
+import { Prose } from "@/components/Prose";
+import { formatPrice, formatYear } from "@/lib/artwork";
 import { getArtwork } from "@/lib/queries";
 
 export const revalidate = 3600;
@@ -42,6 +43,7 @@ export default async function ArtworkPage({ params }: Props) {
   const { artwork, related } = result;
   const year = artwork.dateText ?? formatYear(artwork.yearStart, artwork.yearEnd);
   const place = [artwork.city, artwork.country].filter(Boolean).join(", ") || null;
+  const price = formatPrice(artwork.salePrice, artwork.saleCurrency);
 
   return (
     <article className="mx-auto max-w-[1600px] px-6 py-10">
@@ -84,6 +86,42 @@ export default async function ArtworkPage({ params }: Props) {
             </p>
           )}
 
+          {price && (
+            <section className="mt-8 rounded-lg border border-border bg-surface p-5">
+              <h2 className="text-xs uppercase tracking-widest text-muted">
+                Last recorded sale
+              </h2>
+              <p className="mt-2 font-serif text-3xl text-accent">{price}</p>
+              {artwork.saleDate && (
+                <p className="mt-1 text-sm text-muted">
+                  {new Date(artwork.saleDate).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                    timeZone: "UTC",
+                  })}
+                </p>
+              )}
+              <p className="mt-3 text-xs leading-relaxed text-muted">
+                The price this work fetched when it last changed hands, not a
+                current valuation or appraisal.
+                {artwork.saleSourceUrl && (
+                  <>
+                    {" "}
+                    <a
+                      href={artwork.saleSourceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-accent hover:underline"
+                    >
+                      Source
+                    </a>
+                  </>
+                )}
+              </p>
+            </section>
+          )}
+
           <dl className="mt-8">
             <Detail label="Medium" value={artwork.medium} />
             <Detail label="Dimensions" value={artwork.dimensions} />
@@ -94,6 +132,49 @@ export default async function ArtworkPage({ params }: Props) {
             <Detail label="Department" value={artwork.department} />
             <Detail label="Credit" value={artwork.creditLine} />
           </dl>
+
+          {artwork.interpretation && (
+            <section className="mt-10">
+              <h2 className="font-serif text-xl text-foreground">
+                About this work
+              </h2>
+              <Prose text={artwork.interpretation} className="mt-4" />
+              {artwork.interpretationSource && (
+                <p className="mt-4 text-xs text-muted">
+                  {artwork.interpretationUrl ? (
+                    <a
+                      href={artwork.interpretationUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-accent hover:underline"
+                    >
+                      {artwork.interpretationSource}
+                    </a>
+                  ) : (
+                    artwork.interpretationSource
+                  )}
+                </p>
+              )}
+            </section>
+          )}
+
+          {artwork.provenance && (
+            <details className="group mt-10 border-t border-border pt-6">
+              <summary className="cursor-pointer list-none font-serif text-xl text-foreground transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+                Provenance
+                <span className="ml-2 text-sm font-sans text-muted group-open:hidden">
+                  show
+                </span>
+                <span className="ml-2 hidden text-sm font-sans text-muted group-open:inline">
+                  hide
+                </span>
+              </summary>
+              <p className="mt-3 text-xs text-muted">
+                Ownership history as published by {artwork.museum ?? "the source"}.
+              </p>
+              <Prose text={artwork.provenance} className="mt-4" />
+            </details>
+          )}
 
           {artwork.latitude != null && artwork.longitude != null && (
             <a

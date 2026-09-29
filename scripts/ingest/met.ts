@@ -33,10 +33,15 @@ type MetObject = {
   primaryImage: string | null;
   primaryImageSmall: string | null;
   objectURL: string | null;
+  objectWikidata_URL: string | null;
   isPublicDomain: boolean | null;
   isHighlight: boolean | null;
   tags: { term: string }[] | null;
 };
+
+/** Pull the bare Q-id out of a Wikidata entity URL. */
+const wikidataId = (url: string | null): string | null =>
+  url?.match(/(Q\d+)\s*$/)?.[1] ?? null;
 
 const toArtwork = (item: MetObject): NormalisedArtwork | null => {
   if (!item.title || !item.primaryImageSmall) return null;
@@ -61,6 +66,7 @@ const toArtwork = (item: MetObject): NormalisedArtwork | null => {
     imageUrl: item.primaryImage || item.primaryImageSmall,
     thumbUrl: item.primaryImageSmall,
     creditLine: item.creditLine,
+    wikidataId: wikidataId(item.objectWikidata_URL),
     isPublicDomain: Boolean(item.isPublicDomain),
     isHighlight: Boolean(item.isHighlight),
     tags: (item.tags ?? []).map((t) => t.term),
