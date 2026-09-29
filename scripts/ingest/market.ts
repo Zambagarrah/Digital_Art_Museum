@@ -62,9 +62,9 @@ export const fetchMarketSales = async (
 ): Promise<NormalisedArtwork[]> => {
   const url = `${ENDPOINT}?format=json&query=${encodeURIComponent(QUERY)}`;
   const body = await fetchJson<SparqlResponse>(url, {
-    retries: 2,
-    delayMs: 2000,
-    timeoutMs: 60_000,
+    retries: 4,
+    delayMs: 8000,
+    timeoutMs: 120_000,
   });
 
   const bindings = body?.results?.bindings ?? [];

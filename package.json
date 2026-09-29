@@ -12,6 +12,7 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx scripts/seed.ts",
     "db:enrich": "tsx scripts/enrich.ts",
+    "db:masterpieces": "tsx scripts/masterpieces.ts",
     "postinstall": "prisma generate",
     "typecheck": "tsc --noEmit"
   },

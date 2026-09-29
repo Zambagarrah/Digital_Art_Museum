@@ -12,7 +12,7 @@ gallery.
   (IIIF-backed where the source supports it) and related works.
 - **Context & provenance** — curatorial or encyclopedic prose explaining each
   work, plus ownership history where the museum publishes it.
-- **Aggregation pipeline** that normalises records from four public APIs into
+- **Aggregation pipeline** that normalises records from five public APIs into
   a single local catalogue.
 
 ## Sources
@@ -22,7 +22,26 @@ gallery.
 | [Art Institute of Chicago](https://api.artic.edu/docs/) | Paintings, sculpture, decorative arts | No |
 | [Metropolitan Museum of Art](https://metmuseum.github.io/) | Encyclopedic collection | No |
 | [Wikidata](https://query.wikidata.org/) | UNESCO World Heritage monuments | No |
+| [Wikidata](https://query.wikidata.org/) | Canonical paintings from the great collections | No |
 | [Wikidata (P2284)](https://query.wikidata.org/) | Paintings with a public auction record | No |
+
+## Choosing the canon
+
+The museum APIs return whatever their search ranks highest, which skews toward
+whatever is well catalogued rather than what matters. A fifth source fills the
+obvious gaps — the Mona Lisa, the Ghent Altarpiece, Guernica — by asking
+Wikidata for paintings held in the world's great collections or made by the
+canonical painters, ranked by how many language Wikipedias cover them.
+
+Sitelink count is a blunt proxy for cultural reach, but an honest one: the Mona
+Lisa has articles in 146 languages, a minor still life in one.
+
+Two details make it work. Canonical paintings are often not typed `painting` —
+The Last Supper is a `fresco`, the Ghent Altarpiece a `polyptych`, The Scream a
+`group of paintings` — so several types are matched. And a work's collection is
+usually a *department* rather than the museum (the Mona Lisa belongs to the
+Louvre's painting department), so the `part of` chain is followed before
+matching.
 
 ## On prices
 
@@ -56,7 +75,7 @@ Then open http://localhost:3000.
 The seed script accepts per-source limits:
 
 ```bash
-npm run db:seed -- --aic=3000 --met=1500 --monuments=800 --market=200
+npm run db:seed -- --aic=3000 --met=1500 --monuments=800 --market=200 --masterpieces=400
 ```
 
 It upserts on `(source, sourceId)`, so re-running it refreshes existing records

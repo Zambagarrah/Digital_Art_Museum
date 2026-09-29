@@ -8,10 +8,46 @@ type Props = {
   imageUrl: string | null;
   iiifBaseUrl: string | null;
   backgroundColor: string | null;
+  framed?: boolean;
 };
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 6;
+
+/**
+ * A gilded frame, drawn entirely in CSS.
+ *
+ * Gold is a gradient rather than a flat fill because a real gilt moulding
+ * catches light unevenly across its profile — the alternating light and dark
+ * stops read as the bevels of a carved frame. Kept muted rather than bright
+ * yellow so it sits inside the dark gallery instead of shouting over the work.
+ */
+const FRAME_STYLE: React.CSSProperties = {
+  padding: "clamp(12px, 2.1vw, 32px)",
+  borderRadius: 2,
+  background:
+    "linear-gradient(145deg, #5e4822 0%, #c9a96a 16%, #8a6d3b 34%, #e2c68d 50%, #8a6d3b 66%, #c9a96a 84%, #55401d 100%)",
+  boxShadow: [
+    "inset 0 0 0 1px rgba(255, 238, 196, 0.32)",
+    "inset 0 0 0 2px rgba(0, 0, 0, 0.28)",
+    "0 32px 64px -24px rgba(0, 0, 0, 0.9)",
+    "0 10px 24px -14px rgba(0, 0, 0, 0.7)",
+  ].join(", "),
+};
+
+/**
+ * The rabbet — the lip where the moulding overlaps the canvas.
+ *
+ * Painted as an overlay rather than an inset shadow on the stage, because an
+ * inset shadow renders behind the image and would be invisible.
+ */
+const RABBET_STYLE: React.CSSProperties = {
+  boxShadow: [
+    "inset 0 0 0 1px rgba(0, 0, 0, 0.6)",
+    "inset 0 3px 10px rgba(0, 0, 0, 0.5)",
+    "inset 0 -2px 8px rgba(0, 0, 0, 0.32)",
+  ].join(", "),
+};
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
@@ -28,6 +64,7 @@ export const ArtworkViewer = ({
   imageUrl,
   iiifBaseUrl,
   backgroundColor,
+  framed = false,
 }: Props) => {
   const [zoom, setZoom] = useState(MIN_ZOOM);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -100,35 +137,47 @@ export const ArtworkViewer = ({
 
   return (
     <div>
-      <div
-        role="presentation"
-        onWheel={onWheel}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        className={`relative overflow-hidden rounded-xl border border-border ${
-          zoomed ? "cursor-grab active:cursor-grabbing" : "cursor-zoom-in"
-        }`}
-        style={{ backgroundColor: backgroundColor ?? "var(--surface)" }}
-      >
-        <button
-          type="button"
-          onClick={toggleZoom}
-          aria-label={zoomed ? `Zoom out of ${title}` : `Zoom into ${title}`}
-          className="block w-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      <div style={framed ? FRAME_STYLE : undefined}>
+        <div
+          role="presentation"
+          onWheel={onWheel}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+          className={`relative overflow-hidden ${
+            framed ? "" : "rounded-xl border border-border"
+          } ${zoomed ? "cursor-grab active:cursor-grabbing" : "cursor-zoom-in"}`}
+          style={{ backgroundColor: backgroundColor ?? "var(--surface)" }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={source}
-            alt={title}
-            draggable={false}
-            className="max-h-[78vh] w-full select-none object-contain transition-transform duration-200"
-            style={{
-              transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
-            }}
-          />
-        </button>
+          <button
+            type="button"
+            onClick={toggleZoom}
+            aria-label={zoomed ? `Zoom out of ${title}` : `Zoom into ${title}`}
+            className="block w-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={source}
+              alt={title}
+              draggable={false}
+              className={`w-full select-none object-contain transition-transform duration-200 ${
+                framed ? "max-h-[72vh]" : "max-h-[78vh]"
+              }`}
+              style={{
+                transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
+              }}
+            />
+          </button>
+
+          {framed && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0"
+              style={RABBET_STYLE}
+            />
+          )}
+        </div>
       </div>
 
       <div className="mt-3 flex items-center gap-4 text-xs text-muted">
