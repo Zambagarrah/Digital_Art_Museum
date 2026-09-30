@@ -1,16 +1,21 @@
 // Digital Art Museum — data model
 //
-// Provider is SQLite for local development. To deploy on Postgres, change
-// `provider` to "postgresql" and point DATABASE_URL at the server; every field
-// below uses portable scalar types, so no other edits are required.
+// Provider is PostgreSQL, which is what the Docker/Dokploy deployment expects.
+// To run against local SQLite instead, change `provider` to "sqlite" and point
+// DATABASE_URL at a file; every field below uses portable scalar types, so no
+// other edits are required.
 
 generator client {
-  provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
+  provider      = "prisma-client-js"
+  output        = "../src/generated/prisma"
+  // `native` covers local development; the Debian target is the one the
+  // production container loads, and is kept explicit so an image built on a
+  // different host still ships a usable query engine.
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -108,8 +113,8 @@ model Artwork {
   longitude  Float?
 
   // Imagery
-  imageUrl String?
-  thumbUrl String?
+  imageUrl    String?
+  thumbUrl    String?
   /// IIIF image base URL, when the source exposes one, for deep zoom.
   iiifBaseUrl String?
   colorHex    String?

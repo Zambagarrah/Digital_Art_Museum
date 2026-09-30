@@ -4,7 +4,10 @@ import { CATEGORY_LABELS } from "@/lib/artwork";
 import { imageSrc } from "@/lib/images";
 import { getFeatured } from "@/lib/queries";
 
-export const revalidate = 3600;
+// Rendered per request so the production image can be built without a reachable
+// database; `getFeatured` is cached for an hour, so this still serves from
+// cache in practice.
+export const dynamic = "force-dynamic";
 
 const EmptyState = () => (
   <div className="mx-auto max-w-xl px-6 py-32 text-center">

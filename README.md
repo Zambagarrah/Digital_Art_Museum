@@ -63,20 +63,33 @@ price to rank by.
 
 ## Getting started
 
+The catalogue lives in PostgreSQL. `compose.yaml` provides one for local work:
+
 ```bash
+cp .env.example .env
+docker compose up -d   # Postgres on localhost:5432
 npm install
-npm run db:push     # create the SQLite schema
-npm run db:seed     # pull ~2,100 works from the public APIs
+npm run db:push        # create the schema
+npm run db:seed        # pull ~2,100 works from the public APIs
 npm run dev
 ```
 
 Then open http://localhost:3000.
+
+If you would rather use a PostgreSQL you already have installed, skip the
+`compose` step, create an empty database, and point `DATABASE_URL` at it.
 
 The seed script accepts per-source limits:
 
 ```bash
 npm run db:seed -- --aic=3000 --met=1500 --monuments=800 --market=200 --masterpieces=400
 ```
+
+Wikidata's query service allows roughly one request a minute and returns nothing
+at all when it is busy, so the three Wikidata-backed sources are fetched in
+sequence with a pause between them. A full seed takes several minutes, and it is
+normal for one source to come back empty — re-run `npm run db:masterpieces` or
+`npm run db:enrich` to fill the gap rather than repeating the whole seed.
 
 It upserts on `(source, sourceId)`, so re-running it refreshes existing records
 rather than duplicating them, then prunes rows a source no longer returns so the
@@ -129,15 +142,100 @@ allowlist, so it cannot be used as an open proxy.
 
 ## Database
 
-Local development uses SQLite for zero setup. The schema deliberately avoids
-provider-specific types, so deploying on Postgres is a one-line change:
+PostgreSQL, via Prisma. The schema deliberately avoids provider-specific types,
+so switching back to SQLite for a throwaway local setup is a one-line change in
+`prisma/schema.prisma` — though `queries.ts` passes `mode: "insensitive"` on
+search, which Postgres needs and SQLite rejects.
 
-```prisma
-datasource db {
-  provider = "postgresql"   // was "sqlite"
-  url      = env("DATABASE_URL")
+## Deployment
+
+The repository ships a multi-stage `Dockerfile` that builds Next.js in
+[standalone mode](https://nextjs.org/docs/app/api-reference/config/next-config-js/output),
+so the runtime image carries only the server, its traced dependencies and the
+Prisma query engine. Nothing in the build touches the database — every route is
+rendered on demand — so the image builds anywhere.
+
+### Dokploy
+
+1. **Push the repository** to GitHub, GitLab or any Git remote Dokploy can read.
+
+2. **Create a Postgres service.** In your project, *Create Service → Database →
+   Postgres*. Set a database name, user and password, then deploy it. Its page
+   shows the internal hostname; the application container reaches it over
+   Dokploy's Docker network, so there is no need to publish a port.
+
+3. **Create the application.** *Create Service → Application*, point it at the
+   repository and branch, then under *Build Type* choose **Dockerfile** with
+   path `Dockerfile` and context `.`.
+
+4. **Set the environment variable** in the application's *Environment* tab:
+
+   ```text
+   DATABASE_URL=postgresql://USER:PASSWORD@INTERNAL_HOSTNAME:5432/DATABASE
+   ```
+
+   The container refuses to start without it rather than failing one request at
+   a time.
+
+5. **Add a domain.** In *Domains*, add the hostname, set the container port to
+   **3000**, and enable HTTPS so Traefik issues a certificate.
+
+6. **Deploy.**
+
+7. **Create the schema and load the catalogue.** The runtime image deliberately
+   contains no Prisma CLI and no seed scripts, so this is done once from your
+   machine. Temporarily give the Postgres service an external port in Dokploy,
+   then:
+
+   ```bash
+   export DATABASE_URL="postgresql://USER:PASSWORD@SERVER_IP:5432/DATABASE"
+   npm run db:push
+   npm run db:seed
+   ```
+
+   Remove the external port again when the seed finishes. Repeat `db:push`
+   after any change to `prisma/schema.prisma`.
+
+### Health checks and rollbacks
+
+`GET /api/health` runs a query, so it reports 503 when the database is
+unreachable instead of claiming health because the process is up. Wire it into
+*Advanced → Cluster Settings → Swarm Settings*:
+
+```json
+{
+  "Test": ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"],
+  "Interval": 30000000000,
+  "Timeout": 10000000000,
+  "StartPeriod": 40000000000,
+  "Retries": 3
 }
 ```
+
+The check runs `node` rather than `curl`, which the slim base image does not
+carry. Pair it with an update config so a bad release backs itself out:
+
+```json
+{ "Parallelism": 1, "Delay": 10000000000, "FailureAction": "rollback", "Order": "start-first" }
+```
+
+Run a single replica. Nothing in the app coordinates schema changes between
+instances, and the on-disk ISR cache is per-container.
+
+### Notes
+
+- Building on the same server that runs your apps is memory-hungry and can stall
+  a small VPS. If that bites, build the image in CI and have Dokploy deploy the
+  published tag instead — Dokploy's
+  [Going Production](https://docs.dokploy.com/docs/core/applications/going-production)
+  guide covers the webhook.
+- `.dockerignore` keeps `.env` and local `*.db` files out of the build context,
+  and the Dockerfile deletes any env file that reaches the image anyway: Next
+  copies `.env` into the standalone output by design, and that output is copied
+  wholesale into the final stage.
+- The base image pins Debian **bookworm** to match the `debian-openssl-3.0.x`
+  Prisma engine target in `prisma/schema.prisma`. Moving to trixie (OpenSSL 3.5)
+  means changing both together.
 
 ## Roadmap
 

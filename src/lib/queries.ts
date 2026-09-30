@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { prisma } from "./prisma";
 import { isCategory, type Category } from "./artwork";
 import type { Prisma } from "@/generated/prisma";
@@ -82,13 +83,15 @@ const buildWhere = (query: BrowseQuery): Prisma.ArtworkWhereInput => {
   const filters: Prisma.ArtworkWhereInput[] = [{ thumbUrl: { not: null } }];
 
   if (query.q) {
+    // Postgres `LIKE` is case-sensitive where SQLite's is not, so the mode has
+    // to be spelled out or lowercase searches would return nothing.
     filters.push({
       OR: [
-        { title: { contains: query.q } },
-        { artistName: { contains: query.q } },
-        { culture: { contains: query.q } },
-        { medium: { contains: query.q } },
-        { classification: { contains: query.q } },
+        { title: { contains: query.q, mode: "insensitive" } },
+        { artistName: { contains: query.q, mode: "insensitive" } },
+        { culture: { contains: query.q, mode: "insensitive" } },
+        { medium: { contains: query.q, mode: "insensitive" } },
+        { classification: { contains: query.q, mode: "insensitive" } },
       ],
     });
   }
@@ -214,35 +217,39 @@ export const getArtwork = async (slug: string) => {
 };
 
 /** Small sample used to fill the landing page hero and rails. */
-export const getFeatured = async () => {
-  const [highlights, monuments, stats] = await Promise.all([
-    prisma.artwork.findMany({
-      where: { thumbUrl: { not: null }, isHighlight: true },
-      select: CARD_FIELDS,
-      take: 12,
-    }),
-    prisma.artwork.findMany({
-      where: { thumbUrl: { not: null }, category: "monument" },
-      select: CARD_FIELDS,
-      take: 12,
-    }),
-    prisma.artwork.groupBy({ by: ["category"], _count: { _all: true } }),
-  ]);
+export const getFeatured = unstable_cache(
+  async () => {
+    const [highlights, monuments, stats] = await Promise.all([
+      prisma.artwork.findMany({
+        where: { thumbUrl: { not: null }, isHighlight: true },
+        select: CARD_FIELDS,
+        take: 12,
+      }),
+      prisma.artwork.findMany({
+        where: { thumbUrl: { not: null }, category: "monument" },
+        select: CARD_FIELDS,
+        take: 12,
+      }),
+      prisma.artwork.groupBy({ by: ["category"], _count: { _all: true } }),
+    ]);
 
-  // A brand-new database has no highlights flagged; fall back to anything.
-  const hero =
-    highlights.length > 0
-      ? highlights
-      : await prisma.artwork.findMany({
-          where: { thumbUrl: { not: null } },
-          select: CARD_FIELDS,
-          take: 12,
-        });
+    // A brand-new database has no highlights flagged; fall back to anything.
+    const hero =
+      highlights.length > 0
+        ? highlights
+        : await prisma.artwork.findMany({
+            where: { thumbUrl: { not: null } },
+            select: CARD_FIELDS,
+            take: 12,
+          });
 
-  return {
-    highlights: hero,
-    monuments,
-    counts: Object.fromEntries(stats.map((row) => [row.category, row._count._all])),
-    total: stats.reduce((sum, row) => sum + row._count._all, 0),
-  };
-};
+    return {
+      highlights: hero,
+      monuments,
+      counts: Object.fromEntries(stats.map((row) => [row.category, row._count._all])),
+      total: stats.reduce((sum, row) => sum + row._count._all, 0),
+    };
+  },
+  ["featured"],
+  { revalidate: 3600 },
+);
