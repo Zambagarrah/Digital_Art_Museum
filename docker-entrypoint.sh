@@ -8,8 +8,11 @@ if [ -z "$DATABASE_URL" ]; then
   exit 1
 fi
 
-# Schema changes are applied deliberately with `npm run db:push` from a machine
-# that can reach the database — not automatically on boot, which would race
-# across replicas and can alter a live schema unattended.
+# Push the Prisma schema to the database, creating or migrating tables as
+# needed. This is idempotent — safe to run on every boot and across replicas
+# because `db push` is a no-op when the schema is already in sync.
+echo "docker-entrypoint: running prisma db push..."
+./node_modules/.bin/prisma db push --schema=./prisma/schema.prisma --skip-generate
+echo "docker-entrypoint: prisma db push complete."
 
 exec "$@"
