@@ -15,6 +15,7 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx scripts/seed.ts",
     "db:cleveland": "tsx scripts/cleveland.ts",
+    "db:castles": "tsx scripts/castles.ts",
     "db:enrich": "tsx scripts/enrich.ts",
     "db:facts": "tsx scripts/facts.ts",
     "db:masterpieces": "tsx scripts/masterpieces.ts",

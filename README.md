@@ -12,7 +12,7 @@ gallery.
   (IIIF-backed where the source supports it) and related works.
 - **Context & provenance** — curatorial or encyclopedic prose explaining each
   work, plus ownership history where the museum publishes it.
-- **Aggregation pipeline** that normalises records from six public sources into
+- **Aggregation pipeline** that normalises records from seven public sources into
   a single local catalogue.
 
 ## Sources
@@ -23,6 +23,7 @@ gallery.
 | [Metropolitan Museum of Art](https://metmuseum.github.io/) | Encyclopedic collection | No |
 | [Cleveland Museum of Art](https://openaccess-api.clevelandart.org/) | CC0 paintings, sculpture, and historical object types | No |
 | [Wikidata](https://query.wikidata.org/) | UNESCO World Heritage monuments | No |
+| [Wikidata](https://query.wikidata.org/) | Castles of Europe, ranked by Wikipedia coverage | No |
 | [Wikidata](https://query.wikidata.org/) | Canonical paintings from the great collections | No |
 | [Wikidata (P2284)](https://query.wikidata.org/) | Paintings with a public auction record | No |
 
@@ -70,7 +71,7 @@ cp .env.example .env
 docker compose up -d   # Postgres on localhost:5432
 npm install
 npm run db:push        # create the schema
-npm run db:seed        # pull up to ~9,500 works from public sources
+npm run db:seed        # pull up to ~9,800 works from public sources
 npm run dev
 ```
 
@@ -82,7 +83,7 @@ If you would rather use a PostgreSQL you already have installed, skip the
 The seed script accepts per-source limits:
 
 ```bash
-npm run db:seed -- --aic=3000 --met=1500 --cleveland=4000 --monuments=800 --market=200 --masterpieces=400
+npm run db:seed -- --aic=3000 --met=1500 --cleveland=4000 --monuments=800 --market=200 --masterpieces=400 --castles=300
 ```
 
 To refresh only the Cleveland Museum's CC0 collection, without waiting for the
@@ -92,11 +93,19 @@ Wikidata sources:
 npm run db:cleveland -- --limit=4000
 ```
 
+To load only the castles of Europe (UNESCO-listed castles move out of the
+monuments list so each appears once):
+
+```bash
+npm run db:castles -- --limit=300
+```
+
 Wikidata's query service allows roughly one request a minute and returns nothing
-at all when it is busy, so the three Wikidata-backed sources are fetched in
+at all when it is busy, so the four Wikidata-backed sources are fetched in
 sequence with a pause between them. A full seed takes several minutes, and it is
-normal for one source to come back empty — re-run `npm run db:masterpieces` or
-`npm run db:enrich` to fill the gap rather than repeating the whole seed.
+normal for one source to come back empty — re-run `npm run db:masterpieces`,
+`npm run db:castles` or `npm run db:enrich` to fill the gap rather than
+repeating the whole seed.
 
 It upserts on `(source, sourceId)`, so re-running it refreshes existing records
 rather than duplicating them, then prunes rows a source no longer returns so the

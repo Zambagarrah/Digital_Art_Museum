@@ -147,7 +147,7 @@ const trimEnd = (value: string) => value.trim().replace(/[\s.;,:]+$/, "");
 const sentence = (value: string) => (/[.!?]["”’)]?$/.test(value) ? value : `${value}.`);
 const yearLabel = (year: number) => formatYear(year, year) ?? String(year);
 
-const ordinal = (n: number) => {
+export const ordinal = (n: number) => {
   if (n % 100 >= 11 && n % 100 <= 13) return `${n}th`;
   return `${n}${["th", "st", "nd", "rd"][n % 10] ?? "th"}`;
 };
@@ -224,7 +224,7 @@ const placeWithArticle = (name: string) =>
   !/^the\s/i.test(name) && STATE.test(name) ? `the ${name}` : name;
 
 const identity = (record: NarrativeRecord): string[] => {
-  const kind = KIND[record.category] ?? "work";
+  const kind = record.source === "castles" ? "castle" : (KIND[record.category] ?? "work");
   const maker =
     record.artistName && !NOT_A_MAKER.test(record.artistName) ? record.artistName : null;
   const when = datePhrase(record);
@@ -238,11 +238,17 @@ const identity = (record: NarrativeRecord): string[] => {
     sentences.push(`Its recorded origin is ${record.culture.trim()}`);
   }
 
-  if (record.source === "wikidata" && record.category === "monument") {
-    sentences.push(
-      `It is listed as a UNESCO World Heritage Site${record.country ? ` in ${placeWithArticle(record.country)}` : ""}`,
-    );
-    if (record.classification && record.classification.toLowerCase() !== "monument") {
+  if (
+    record.category === "monument" &&
+    (record.source === "wikidata" || record.source === "castles")
+  ) {
+    const place = record.country ? ` in ${placeWithArticle(record.country)}` : "";
+    if (record.source === "wikidata") {
+      sentences.push(`It is listed as a UNESCO World Heritage Site${place}`);
+    } else if (place) {
+      sentences.push(`It stands${place}`);
+    }
+    if (record.classification && !/^(monument|castle)$/i.test(record.classification)) {
       sentences.push(`Its recorded architectural style is ${record.classification}`);
     }
   }

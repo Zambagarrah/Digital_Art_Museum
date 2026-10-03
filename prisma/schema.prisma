@@ -133,6 +133,8 @@ model Artwork {
   provenance     String?
   isPublicDomain Boolean @default(false)
   isHighlight    Boolean @default(false)
+  /// How many Wikipedias cover it, from Wikidata sitelinks; a rough measure of fame.
+  reach          Int?
 
   // A recorded sale. Only ever populated from a cited public record — museum
   // holdings are not for sale and carry no market value, so this stays null

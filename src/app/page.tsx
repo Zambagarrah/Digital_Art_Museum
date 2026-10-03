@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ArtworkGrid } from "@/components/ArtworkCard";
-import { CATEGORY_LABELS } from "@/lib/artwork";
+import { CASTLES_COLLECTION, CATEGORY_LABELS } from "@/lib/artwork";
 import { imageSrc } from "@/lib/images";
 import { getFeatured } from "@/lib/queries";
 
@@ -30,7 +30,7 @@ const EmptyState = () => (
 );
 
 export default async function HomePage() {
-  const { highlights, monuments, counts, total } = await getFeatured();
+  const { highlights, monuments, castles, counts, total } = await getFeatured();
 
   if (total === 0) return <EmptyState />;
 
@@ -80,7 +80,7 @@ export default async function HomePage() {
               <Link
                 key={work.id}
                 href={`/artwork/${work.slug}`}
-                className="group relative block aspect-5/4 overflow-hidden bg-surface focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent"
+                className="group relative block aspect-5/4 overflow-hidden bg-surface focus-visible:z-10 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -124,6 +124,27 @@ export default async function HomePage() {
             </Link>
           </div>
           <ArtworkGrid artworks={monuments} />
+        </section>
+      )}
+
+      {castles.length > 0 && (
+        <section className="mt-20">
+          <div className="mb-6 flex items-end justify-between gap-6">
+            <div>
+              <h2 className="font-serif text-2xl text-foreground">{CASTLES_COLLECTION}</h2>
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
+                Medieval strongholds, royal residences and romantic revivals,
+                led by the castles most widely documented across Wikipedia.
+              </p>
+            </div>
+            <Link
+              href={`/browse?museum=${encodeURIComponent(CASTLES_COLLECTION)}`}
+              className="shrink-0 text-sm text-accent hover:underline"
+            >
+              See all
+            </Link>
+          </div>
+          <ArtworkGrid artworks={castles} />
         </section>
       )}
     </div>

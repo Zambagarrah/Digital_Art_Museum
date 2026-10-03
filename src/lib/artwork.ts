@@ -21,6 +21,9 @@ export const CATEGORY_LABELS: Record<Category, string> = {
 export const isCategory = (value: string): value is Category =>
   (CATEGORIES as readonly string[]).includes(value);
 
+/** Collection label shared by the castles ingest and the homepage section. */
+export const CASTLES_COLLECTION = "Castles of Europe";
+
 const PAINTING_HINTS = [
   "painting",
   "oil on",

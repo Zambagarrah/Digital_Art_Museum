@@ -17,12 +17,14 @@ export const generateMetadata = async ({
     ? `Search: ${query.q}`
     : query.category
       ? CATEGORY_LABELS[query.category]
-      : "Browse the collection";
+      : query.museum ?? "Browse the collection";
   const description = query.q
     ? `Search paintings, sculptures, artifacts, and monuments for ${query.q}.`
     : query.category
       ? `Browse ${CATEGORY_LABELS[query.category].toLowerCase()} from open museum collections.`
-      : "Browse and search paintings, sculptures, historical artifacts, and monuments from open museum collections.";
+      : query.museum
+        ? `Browse ${query.museum} in the Digital Art Museum catalogue.`
+        : "Browse and search paintings, sculptures, historical artifacts, and monuments from open museum collections.";
 
   return { title, description };
 };
@@ -35,10 +37,10 @@ const SORTS = [
   { value: "price", label: "Highest sale" },
 ] as const;
 
-const headingFor = (category: string | null, q: string) => {
+const headingFor = (category: string | null, q: string, museum: string | null) => {
   if (q) return `Results for “${q}”`;
   if (category && isCategory(category)) return CATEGORY_LABELS[category];
-  return "The collection";
+  return museum ?? "The collection";
 };
 
 export default async function BrowsePage({
@@ -53,7 +55,7 @@ export default async function BrowsePage({
     <div className="mx-auto max-w-[1600px] px-6 py-10">
       <header className="mb-8">
         <h1 className="font-serif text-3xl text-foreground">
-          {headingFor(query.category, query.q)}
+          {headingFor(query.category, query.q, query.museum)}
         </h1>
         <p className="mt-2 text-sm text-muted">
           {total.toLocaleString()} {total === 1 ? "work" : "works"}

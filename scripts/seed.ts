@@ -1,5 +1,6 @@
 import { setDefaultResultOrder } from "node:dns";
 import { fetchArtInstitute } from "./ingest/art-institute";
+import { fetchCastles } from "./ingest/castles";
 import { fetchCleveland } from "./ingest/cleveland";
 import { fetchMarketSales } from "./ingest/market";
 import { fetchMasterpieces } from "./ingest/masterpieces";
@@ -31,6 +32,7 @@ const main = async () => {
   const monumentLimit = numericArg("monuments", 400);
   const marketLimit = numericArg("market", 200);
   const masterpieceLimit = numericArg("masterpieces", 400);
+  const castleLimit = numericArg("castles", 300);
 
   console.log("Fetching from public museum APIs…");
 
@@ -41,31 +43,39 @@ const main = async () => {
     fetchCleveland(clevelandLimit),
   ]);
 
-  // The three Wikidata queries all hit one endpoint, which rate-limits hard
+  // The Wikidata queries all hit one endpoint, which rate-limits hard
   // (1 request/minute during a service outage). Running them concurrently
-  // makes two of the three fail, so they are serialised and spaced instead.
+  // makes most of them fail, so they are serialised and spaced instead.
   const monuments = await fetchMonuments(monumentLimit);
   await sleep(WDQS_GAP_MS);
   const market = await fetchMarketSales(marketLimit);
   await sleep(WDQS_GAP_MS);
   const masterpieces = await fetchMasterpieces(masterpieceLimit);
+  await sleep(WDQS_GAP_MS);
+  const castles = await fetchCastles(castleLimit);
+
+  // UNESCO-listed castles also arrive as monuments; keep only the castle record.
+  const castleIds = new Set(castles.map((castle) => castle.sourceId));
+  const sites = monuments.filter((site) => !castleIds.has(site.sourceId));
 
   const works = deduplicateSlugs(attachRecordedSales([
     ...aic,
     ...met,
     ...cleveland,
-    ...monuments,
+    ...sites,
     ...market,
     ...masterpieces,
+    ...castles,
   ], market));
 
   for (const [name, rows] of [
     ["art institute", aic],
     ["met", met],
     ["cleveland", cleveland],
-    ["monuments", monuments],
+    ["monuments", sites],
     ["market sales", market],
     ["masterpieces", masterpieces],
+    ["castles", castles],
   ] as const) {
     console.log(`  ${name.padEnd(14)} ${rows.length}`);
   }

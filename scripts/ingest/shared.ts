@@ -40,6 +40,7 @@ export type NormalisedArtwork = {
   saleSourceUrl: string | null;
   isPublicDomain: boolean;
   isHighlight: boolean;
+  reach: number | null;
   tags: string[];
 };
 
@@ -94,6 +95,7 @@ export const makeArtwork = (
     saleSourceUrl: input.saleSourceUrl ?? null,
     isPublicDomain: input.isPublicDomain ?? false,
     isHighlight: input.isHighlight ?? false,
+    reach: input.reach ?? null,
     tags: (input.tags ?? []).map((t) => t.trim()).filter(Boolean),
   };
 };

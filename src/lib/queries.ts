@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { prisma } from "./prisma";
-import { isCategory, type Category } from "./artwork";
+import { CASTLES_COLLECTION, isCategory, type Category } from "./artwork";
 import type { Prisma } from "@/generated/prisma";
 
 export const PAGE_SIZE = 36;
@@ -121,8 +121,14 @@ const buildOrderBy = (query: BrowseQuery): Prisma.ArtworkOrderByWithRelationInpu
     case "price":
       return [{ salePrice: "desc" }, { title: "asc" }];
     default:
-      // "Relevance" without a search engine: highlights first, then completeness.
-      return [{ isHighlight: "desc" }, { isPublicDomain: "desc" }, { title: "asc" }];
+      // "Relevance" without a search engine: highlights first, then completeness,
+      // then fame where Wikidata supplies it.
+      return [
+        { isHighlight: "desc" },
+        { isPublicDomain: "desc" },
+        { reach: { sort: "desc", nulls: "last" } },
+        { title: "asc" },
+      ];
   }
 };
 
@@ -219,14 +225,24 @@ export const getArtwork = async (slug: string) => {
 /** Small sample used to fill the landing page hero and rails. */
 export const getFeatured = unstable_cache(
   async () => {
-    const [highlights, monuments, stats] = await Promise.all([
+    const [highlights, monuments, castles, stats] = await Promise.all([
       prisma.artwork.findMany({
         where: { thumbUrl: { not: null }, isHighlight: true },
         select: CARD_FIELDS,
         take: 12,
       }),
       prisma.artwork.findMany({
-        where: { thumbUrl: { not: null }, category: "monument" },
+        where: {
+          thumbUrl: { not: null },
+          category: "monument",
+          NOT: { museum: CASTLES_COLLECTION },
+        },
+        select: CARD_FIELDS,
+        take: 12,
+      }),
+      prisma.artwork.findMany({
+        where: { thumbUrl: { not: null }, museum: CASTLES_COLLECTION },
+        orderBy: [{ reach: { sort: "desc", nulls: "last" } }, { title: "asc" }],
         select: CARD_FIELDS,
         take: 12,
       }),
@@ -246,6 +262,7 @@ export const getFeatured = unstable_cache(
     return {
       highlights: hero,
       monuments,
+      castles,
       counts: Object.fromEntries(stats.map((row) => [row.category, row._count._all])),
       total: stats.reduce((sum, row) => sum + row._count._all, 0),
     };
