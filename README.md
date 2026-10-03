@@ -116,6 +116,23 @@ without re-fetching the museum sources:
 npm run db:enrich
 ```
 
+### Catalogue summaries and provenance
+
+Every artwork page carries a generated catalogue summary and, where an
+ownership history exists, a provenance timeline. Both only restate sourced data
+— the museum record plus Wikidata statements (depicted subjects, genre,
+movement, owners, exhibitions) — and never invent attributions, dates or
+prices. Each is labelled with where it came from.
+
+Published museum provenance always wins; Wikidata's ownership statements fill
+in where none exists. Fetch the Wikidata facts after seeding (and after the
+deploy has added the column):
+
+```bash
+npm run db:facts           # only works without facts yet; safe to re-run
+npm run db:facts -- --all  # refresh every work
+```
+
 
 ## Architecture
 
@@ -127,11 +144,13 @@ src/
   lib/
     artwork.ts        Pure helpers: classification, slugs, date parsing
     images.ts         Resolves stored image URLs to loadable ones
+    narrative.ts      Catalogue summaries and provenance timelines
     queries.ts        Query construction, facets, pagination
     prisma.ts         Database client singleton
 scripts/
   seed.ts             Orchestrates ingestion and persistence
   enrich.ts           Re-runs the Wikipedia context pass over existing rows
+  facts.ts            Stores Wikidata facts used by the narratives
   ingest/             One adapter per source, each normalising to a shared shape
 prisma/schema.prisma  Data model
 ```

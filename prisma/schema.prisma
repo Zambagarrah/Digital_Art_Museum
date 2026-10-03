@@ -124,6 +124,8 @@ model Artwork {
   sourceId       String
   sourceUrl      String?
   wikidataId     String?
+  /// Wikidata statements (depicts, genre, owners…) as JSON, filled by `db:facts`.
+  wikidataFacts  String?
   creditLine     String?
   /// Ownership history from the artist's studio onward, as published by the
   /// holding museum. Frequently cites historical sale prices with archival

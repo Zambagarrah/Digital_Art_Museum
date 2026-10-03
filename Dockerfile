@@ -35,6 +35,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Webpack's file tracing omits the ingestion scripts, which run here via tsx.
+COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
+COPY --from=builder --chown=nextjs:nodejs /app/src/lib ./src/lib
+
 # Copy the FULL node_modules so prisma CLI has all its wasm/binary files,
 # then overwrite the generated prisma client with the one from deps.
 COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules

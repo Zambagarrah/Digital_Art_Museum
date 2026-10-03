@@ -131,6 +131,17 @@ export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve
 const isRetryable = (status: number) =>
   status === 403 || status === 408 || status === 429 || status >= 500;
 
+/** Longest back-off honoured from a `Retry-After` header. */
+const MAX_RETRY_AFTER_MS = 120_000;
+
+const retryAfterMs = (value: string | null) => {
+  if (!value) return 0;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds)) return seconds * 1000;
+  const date = Date.parse(value);
+  return Number.isNaN(date) ? 0 : date - Date.now();
+};
+
 /**
  * Fetch JSON with retry and backoff. Museum APIs are generous but throttle
  * bursts — the Met in particular answers 403 under load — so a single failure
@@ -148,6 +159,8 @@ export const fetchJson = async <T>(
   const host = new URL(url).hostname;
 
   for (let attempt = 0; attempt <= retries; attempt += 1) {
+    let wait = delayMs * 2 ** attempt;
+
     try {
       const response = await fetch(url, {
         headers: {
@@ -163,12 +176,18 @@ export const fetchJson = async <T>(
         console.warn(`  Fetch ${host} failed: ${failure}`);
         return null;
       }
+
+      // Throttled hosts, Wikimedia included, say how long to back off.
+      wait = Math.max(
+        wait,
+        Math.min(retryAfterMs(response.headers.get("retry-after")), MAX_RETRY_AFTER_MS),
+      );
     } catch (error) {
       // Network hiccup or timeout — fall through to the retry.
       failure = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
     }
 
-    if (attempt < retries) await sleep(delayMs * 2 ** attempt);
+    if (attempt < retries) await sleep(wait);
   }
 
   console.warn(`  Fetch ${host} failed after ${retries + 1} attempts: ${failure}`);

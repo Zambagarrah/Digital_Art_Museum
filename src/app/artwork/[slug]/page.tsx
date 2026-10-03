@@ -5,6 +5,7 @@ import { ArtworkGrid } from "@/components/ArtworkCard";
 import { ArtworkViewer } from "@/components/ArtworkViewer";
 import { Prose } from "@/components/Prose";
 import { formatPrice, formatYear } from "@/lib/artwork";
+import { buildProvenance, describeArtwork, parseWikidataFacts } from "@/lib/narrative";
 import { getArtwork } from "@/lib/queries";
 
 export const revalidate = 3600;
@@ -18,10 +19,12 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
 
   const { artwork } = result;
   const byline = artwork.artistName ?? artwork.museum ?? "Digital Art Museum";
+  const facts = parseWikidataFacts(artwork.wikidataFacts);
+  const summary = describeArtwork(artwork, facts, buildProvenance(artwork, facts));
   const description = (
     artwork.description ??
     artwork.interpretation ??
-    `${artwork.title} by ${byline}.`
+    (summary.paragraphs.join(" ") || `${artwork.title} by ${byline}.`)
   )
     .replace(/\s+/g, " ")
     .slice(0, 160);
@@ -51,6 +54,9 @@ export default async function ArtworkPage({ params }: Props) {
   const year = artwork.dateText ?? formatYear(artwork.yearStart, artwork.yearEnd);
   const place = [artwork.city, artwork.country].filter(Boolean).join(", ") || null;
   const price = formatPrice(artwork.salePrice, artwork.saleCurrency);
+  const facts = parseWikidataFacts(artwork.wikidataFacts);
+  const provenance = buildProvenance(artwork, facts);
+  const summary = describeArtwork(artwork, facts, provenance);
 
   return (
     <article className="mx-auto max-w-[1600px] px-6 py-10">
@@ -92,6 +98,26 @@ export default async function ArtworkPage({ params }: Props) {
             <p className="mt-6 text-sm leading-relaxed text-muted">
               {artwork.description}
             </p>
+          )}
+
+          {summary.paragraphs.length > 0 && (
+            <section aria-labelledby="catalogue-summary" className="mt-6">
+              <h2
+                id="catalogue-summary"
+                className="text-xs uppercase tracking-widest text-muted"
+              >
+                Catalogue summary
+              </h2>
+              <div className="mt-3 space-y-3 text-sm leading-relaxed text-foreground/85">
+                {summary.paragraphs.map((paragraph, index) => (
+                  <p key={index}>{paragraph}</p>
+                ))}
+              </div>
+              <p className="mt-3 text-xs text-muted">
+                Generated from this catalogue record
+                {summary.usesWikidata ? " and Wikidata" : ""}; not curatorial text.
+              </p>
+            </section>
           )}
 
           {artwork.artist?.bio && (
@@ -181,8 +207,11 @@ export default async function ArtworkPage({ params }: Props) {
             </section>
           )}
 
-          {artwork.provenance && (
-            <details className="group mt-10 border-t border-border pt-6">
+          {provenance && (
+            <details
+              className="group mt-10 border-t border-border pt-6"
+              open={provenance.events.length <= 6}
+            >
               <summary className="cursor-pointer list-none font-serif text-xl text-foreground transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
                 Provenance
                 <span className="ml-2 text-sm font-sans text-muted group-open:hidden">
@@ -193,9 +222,51 @@ export default async function ArtworkPage({ params }: Props) {
                 </span>
               </summary>
               <p className="mt-3 text-xs text-muted">
-                Ownership history as published by {artwork.museum ?? "the source"}.
+                {provenance.source === "museum"
+                  ? `Ownership history as published by ${artwork.museum ?? "the source"}.`
+                  : "Ownership history from Wikidata, a community-edited source."}
               </p>
-              <Prose text={artwork.provenance} className="mt-4" />
+              <ol className="mt-5 space-y-4 border-l border-border pl-5">
+                {provenance.events.map((event, index) => (
+                  <li key={index} className="relative">
+                    <span
+                      aria-hidden
+                      className="absolute -left-6 top-1.5 size-2 rounded-full bg-accent"
+                    />
+                    {event.year !== null && (
+                      <p className="text-xs tabular-nums text-accent">
+                        {formatYear(event.year, event.year)}
+                      </p>
+                    )}
+                    <p className="text-sm leading-relaxed text-foreground/85">{event.text}</p>
+                    {(event.detail || event.href) && (
+                      <p className="mt-0.5 text-xs text-muted">
+                        {event.detail}
+                        {event.href && (
+                          <>
+                            {event.detail ? " · " : ""}
+                            <a
+                              href={event.href}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-accent hover:underline"
+                            >
+                              Source
+                            </a>
+                          </>
+                        )}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ol>
+              {provenance.notes.length > 0 && (
+                <div className="mt-6 space-y-2 text-xs leading-relaxed text-muted">
+                  {provenance.notes.map((note, index) => (
+                    <p key={index}>{note}</p>
+                  ))}
+                </div>
+              )}
             </details>
           )}
 
