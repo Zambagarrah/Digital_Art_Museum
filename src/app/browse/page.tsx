@@ -1,10 +1,31 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { ArtworkGrid } from "@/components/ArtworkCard";
 import { FilterPanel } from "@/components/FilterPanel";
 import { CATEGORY_LABELS, isCategory } from "@/lib/artwork";
 import { buildHref, parseQuery, searchArtworks, type SearchParams } from "@/lib/queries";
 
 export const revalidate = 300;
+
+export const generateMetadata = async ({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}): Promise<Metadata> => {
+  const query = parseQuery(await searchParams);
+  const title = query.q
+    ? `Search: ${query.q}`
+    : query.category
+      ? CATEGORY_LABELS[query.category]
+      : "Browse the collection";
+  const description = query.q
+    ? `Search paintings, sculptures, artifacts, and monuments for ${query.q}.`
+    : query.category
+      ? `Browse ${CATEGORY_LABELS[query.category].toLowerCase()} from open museum collections.`
+      : "Browse and search paintings, sculptures, historical artifacts, and monuments from open museum collections.";
+
+  return { title, description };
+};
 
 const SORTS = [
   { value: "relevance", label: "Relevance" },
@@ -66,10 +87,29 @@ export default async function BrowsePage({
           </div>
 
           {items.length === 0 ? (
-            <p className="rounded-lg border border-border bg-surface px-6 py-16 text-center text-sm text-muted">
-              Nothing matches those filters yet. Try widening the era or clearing
-              the collection filter.
-            </p>
+            <div className="py-20 text-center">
+              <h2 className="font-serif text-2xl text-foreground">No works found</h2>
+              <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted">
+                Try a broader search or remove one of the active filters.
+              </p>
+              {(query.q || query.category || query.museum || query.artist || query.from !== null || query.to !== null) && (
+                <Link
+                  href={buildHref(query, {
+                    q: "",
+                    category: null,
+                    museum: null,
+                    artist: null,
+                    from: null,
+                    to: null,
+                    sort: "relevance",
+                    page: null,
+                  })}
+                  className="mt-5 inline-flex border-b border-accent pb-1 text-sm text-accent hover:text-foreground"
+                >
+                  Clear search and filters
+                </Link>
+              )}
+            </div>
           ) : (
             <ArtworkGrid artworks={items} />
           )}

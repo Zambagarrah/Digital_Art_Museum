@@ -18,10 +18,17 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
 
   const { artwork } = result;
   const byline = artwork.artistName ?? artwork.museum ?? "Digital Art Museum";
+  const description = (
+    artwork.description ??
+    artwork.interpretation ??
+    `${artwork.title} by ${byline}.`
+  )
+    .replace(/\s+/g, " ")
+    .slice(0, 160);
 
   return {
-    title: `${artwork.title} · ${byline}`,
-    description: artwork.description ?? `${artwork.title} by ${byline}.`,
+    title: `${artwork.title} — ${byline}`,
+    description,
     openGraph: artwork.thumbUrl ? { images: [artwork.thumbUrl] } : undefined,
   };
 };
@@ -85,6 +92,21 @@ export default async function ArtworkPage({ params }: Props) {
             <p className="mt-6 text-sm leading-relaxed text-muted">
               {artwork.description}
             </p>
+          )}
+
+          {artwork.artist?.bio && (
+            <details className="group mt-6 border-t border-border pt-5">
+              <summary className="cursor-pointer list-none font-serif text-lg text-foreground transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+                About {artwork.artist.name}
+                <span className="ml-2 text-xs font-sans text-muted group-open:hidden">
+                  show
+                </span>
+                <span className="ml-2 hidden text-xs font-sans text-muted group-open:inline">
+                  hide
+                </span>
+              </summary>
+              <Prose text={artwork.artist.bio} className="mt-4" />
+            </details>
           )}
 
           {price && (

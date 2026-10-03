@@ -7,7 +7,7 @@ import { useState } from "react";
  * Search field that seeds itself from the current URL, so navigating back to a
  * results page keeps the term the user typed.
  */
-export const SearchBar = () => {
+export const SearchBar = ({ onNavigate }: { onNavigate?: () => void }) => {
   const router = useRouter();
   const params = useSearchParams();
   const urlQuery = params.get("q") ?? "";
@@ -24,14 +24,14 @@ export const SearchBar = () => {
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
     const trimmed = value.trim();
-    const next = new URLSearchParams();
+    const next = new URLSearchParams(params.toString());
     if (trimmed) next.set("q", trimmed);
-
-    const category = params.get("category");
-    if (category) next.set("category", category);
+    else next.delete("q");
+    next.delete("page");
 
     const qs = next.toString();
     router.push(qs ? `/browse?${qs}` : "/browse");
+    onNavigate?.();
   };
 
   return (

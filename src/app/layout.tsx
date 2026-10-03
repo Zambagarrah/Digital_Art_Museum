@@ -15,10 +15,10 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: {
     default: "Digital Art Museum",
-    template: "%s · Digital Art Museum",
+    template: "%s | Digital Art Museum",
   },
   description:
-    "Browse the world's paintings, sculptures and monuments, aggregated from open museum archives.",
+    "Explore paintings, sculptures, historical artifacts, and monuments from open museum collections.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -35,7 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Skip to content
         </a>
 
-        <Suspense fallback={<div className="h-[69px] border-b border-border" />}>
+        <Suspense fallback={<div className="h-17.25 border-b border-border" />}>
           <SiteHeader />
         </Suspense>
 
@@ -46,8 +46,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <footer className="border-t border-border px-6 py-10 text-xs text-muted">
           <div className="mx-auto max-w-[1600px]">
             Images and metadata courtesy of the Art Institute of Chicago, the
-            Metropolitan Museum of Art and Wikimedia Commons. Rights remain with
-            their respective holders.
+            Metropolitan Museum of Art, the Cleveland Museum of Art and Wikimedia
+            Commons. Rights remain with their respective holders.
           </div>
         </footer>
       </body>

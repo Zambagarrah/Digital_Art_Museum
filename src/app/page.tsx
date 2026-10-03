@@ -1,8 +1,15 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { ArtworkGrid } from "@/components/ArtworkCard";
 import { CATEGORY_LABELS } from "@/lib/artwork";
 import { imageSrc } from "@/lib/images";
 import { getFeatured } from "@/lib/queries";
+
+export const metadata: Metadata = {
+  title: "Every Masterpiece, One Quiet Room",
+  description:
+    "Explore paintings, sculptures, historical artifacts, and monuments from the world's open museum collections.",
+};
 
 // Rendered per request so the production image can be built without a reachable
 // database; `getFeatured` is cached for an hour, so this still serves from
@@ -13,9 +20,8 @@ const EmptyState = () => (
   <div className="mx-auto max-w-xl px-6 py-32 text-center">
     <h1 className="font-serif text-3xl text-foreground">The gallery is empty</h1>
     <p className="mt-4 text-sm leading-relaxed text-muted">
-      No works have been ingested yet. Run the seed script to pull paintings,
-      sculptures and monuments from the Art Institute of Chicago, the
-      Metropolitan Museum of Art and Wikidata.
+      No works have been ingested yet. The catalogue brings together paintings,
+      sculptures, historical artifacts and monuments from open museum collections.
     </p>
     <pre className="mt-6 overflow-x-auto rounded-lg border border-border bg-surface px-4 py-3 text-left text-xs text-accent">
       npm run db:seed
@@ -28,7 +34,7 @@ export default async function HomePage() {
 
   if (total === 0) return <EmptyState />;
 
-  const hero = highlights[0];
+  const heroWorks = highlights.filter((work) => work.thumbUrl).slice(0, 4);
 
   return (
     <div className="mx-auto max-w-[1600px] px-6 py-10">
@@ -68,25 +74,31 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {hero?.thumbUrl && (
-          <Link
-            href={`/artwork/${hero.slug}`}
-            className="group relative block overflow-hidden rounded-xl border border-border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={imageSrc(hero.thumbUrl) ?? hero.thumbUrl}
-              alt={hero.title}
-              className="h-[420px] w-full object-cover transition duration-700 group-hover:scale-105"
-            />
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-6">
-              <h2 className="font-serif text-xl text-foreground">{hero.title}</h2>
-              <p className="mt-1 text-sm text-muted">
-                {hero.artistName ?? hero.museum}
-                {hero.dateText ? ` \u00b7 ${hero.dateText}` : ""}
-              </p>
-            </div>
-          </Link>
+        {heroWorks.length > 0 && (
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+            {heroWorks.map((work) => (
+              <Link
+                key={work.id}
+                href={`/artwork/${work.slug}`}
+                className="group relative block aspect-5/4 overflow-hidden border border-border bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={imageSrc(work.thumbUrl) ?? work.thumbUrl!}
+                  alt={work.title}
+                  className="h-full w-full object-contain p-1 transition-transform duration-500 group-hover:scale-[1.03] sm:p-2"
+                />
+                <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 to-transparent px-2 pb-2 pt-7 sm:px-3 sm:pb-3">
+                  <h2 className="truncate font-serif text-xs text-white sm:text-sm">
+                    {work.title}
+                  </h2>
+                  <p className="mt-0.5 truncate text-[10px] text-white/75 sm:text-xs">
+                    {work.artistName ?? work.museum}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
         )}
       </section>
 
