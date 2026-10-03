@@ -8,6 +8,9 @@ import {
 } from "./shared";
 
 const API = "https://collectionapi.metmuseum.org/public/collection/v1";
+const SEARCH_API = `${API}.1/search`;
+const SEARCH_PAGE_SIZE = 500;
+const SEARCH_RESULT_CAP = 10_000;
 
 /** Pause between object requests; the Met 403s sustained bursts. */
 const REQUEST_GAP_MS = 150;
@@ -98,10 +101,28 @@ export const fetchMet = async (limit: number): Promise<NormalisedArtwork[]> => {
   const ids = new Set<number>();
 
   for (const q of queries) {
-    const search = await fetchJson<MetSearch>(
-      `${API}/search?hasImages=true&q=${encodeURIComponent(q)}`,
-    );
-    for (const id of sampleEvenly(search?.objectIDs ?? [], perQuery)) ids.add(id);
+    const queryIds: number[] = [];
+    let total = 0;
+
+    for (
+      let offset = 0;
+      offset < SEARCH_RESULT_CAP && (offset === 0 || offset < total);
+      offset += SEARCH_PAGE_SIZE
+    ) {
+      const url = new URL(SEARCH_API);
+      url.searchParams.set("hasImages", "true");
+      url.searchParams.set("q", q);
+      url.searchParams.set("offset", String(offset));
+      url.searchParams.set("limit", String(SEARCH_PAGE_SIZE));
+
+      const search = await fetchJson<MetSearch>(url.toString());
+      if (!search) break;
+
+      total = search.total;
+      queryIds.push(...(search.objectIDs ?? []));
+    }
+
+    for (const id of sampleEvenly(queryIds, perQuery)) ids.add(id);
   }
 
   const objectIds = [...ids];

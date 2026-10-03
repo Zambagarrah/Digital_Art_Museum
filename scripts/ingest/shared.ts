@@ -117,6 +117,9 @@ export const fetchJson = async <T>(
     timeoutMs = 30_000,
   }: { retries?: number; delayMs?: number; timeoutMs?: number } = {},
 ): Promise<T | null> => {
+  let failure = "unknown error";
+  const host = new URL(url).hostname;
+
   for (let attempt = 0; attempt <= retries; attempt += 1) {
     try {
       const response = await fetch(url, {
@@ -128,14 +131,20 @@ export const fetchJson = async <T>(
       });
 
       if (response.ok) return (await response.json()) as T;
-      if (!isRetryable(response.status)) return null;
-    } catch {
+      failure = `HTTP ${response.status}`;
+      if (!isRetryable(response.status)) {
+        console.warn(`  Fetch ${host} failed: ${failure}`);
+        return null;
+      }
+    } catch (error) {
       // Network hiccup or timeout — fall through to the retry.
+      failure = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
     }
 
     if (attempt < retries) await sleep(delayMs * 2 ** attempt);
   }
 
+  console.warn(`  Fetch ${host} failed after ${retries + 1} attempts: ${failure}`);
   return null;
 };
 
