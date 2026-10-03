@@ -92,6 +92,15 @@ export const fetchMet = async (limit: number): Promise<NormalisedArtwork[]> => {
     "landscape",
     "marble statue",
     "bronze figure",
+    "ancient artifact",
+    "ancient pottery",
+    "ceramic vessel",
+    "Egyptian antiquity",
+    "coin",
+    "armor",
+    "textile",
+    "manuscript",
+    "jewelry",
   ];
 
   // Over-fetch: roughly half of Met records carry no public image, and the

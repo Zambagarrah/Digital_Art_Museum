@@ -3,6 +3,7 @@
 export const CATEGORIES = [
   "painting",
   "sculpture",
+  "artifact",
   "monument",
   "other",
 ] as const;
@@ -12,6 +13,7 @@ export type Category = (typeof CATEGORIES)[number];
 export const CATEGORY_LABELS: Record<Category, string> = {
   painting: "Paintings",
   sculpture: "Sculptures",
+  artifact: "Historical artifacts",
   monument: "Monuments",
   other: "Other works",
 };
@@ -59,6 +61,30 @@ const MONUMENT_HINTS = [
   "architecture",
 ];
 
+const ARTIFACT_HINTS = [
+  "amulet",
+  "armor",
+  "armour",
+  "artifact",
+  "antiquit",
+  "basketry",
+  "ceramic",
+  "coin",
+  "cosmetic object",
+  "funerary",
+  "garment",
+  "jewelry",
+  "jewellery",
+  "manuscript",
+  "papyrus",
+  "pottery",
+  "scarab",
+  "seal",
+  "textile",
+  "vessel",
+  "weapon",
+];
+
 /** Infer a category from whatever free-text descriptors a source provides. */
 export const classify = (...descriptors: (string | null | undefined)[]): Category => {
   const haystack = descriptors.filter(Boolean).join(" ").toLowerCase();
@@ -69,6 +95,7 @@ export const classify = (...descriptors: (string | null | undefined)[]): Categor
   if (matches(MONUMENT_HINTS)) return "monument";
   if (matches(SCULPTURE_HINTS)) return "sculpture";
   if (matches(PAINTING_HINTS)) return "painting";
+  if (matches(ARTIFACT_HINTS)) return "artifact";
   return "other";
 };
 

@@ -12,7 +12,7 @@ gallery.
   (IIIF-backed where the source supports it) and related works.
 - **Context & provenance** — curatorial or encyclopedic prose explaining each
   work, plus ownership history where the museum publishes it.
-- **Aggregation pipeline** that normalises records from five public APIs into
+- **Aggregation pipeline** that normalises records from six public sources into
   a single local catalogue.
 
 ## Sources
@@ -21,6 +21,7 @@ gallery.
 | --- | --- | --- |
 | [Art Institute of Chicago](https://api.artic.edu/docs/) | Paintings, sculpture, decorative arts | No |
 | [Metropolitan Museum of Art](https://metmuseum.github.io/) | Encyclopedic collection | No |
+| [Cleveland Museum of Art](https://openaccess-api.clevelandart.org/) | CC0 paintings, sculpture, and historical object types | No |
 | [Wikidata](https://query.wikidata.org/) | UNESCO World Heritage monuments | No |
 | [Wikidata](https://query.wikidata.org/) | Canonical paintings from the great collections | No |
 | [Wikidata (P2284)](https://query.wikidata.org/) | Paintings with a public auction record | No |
@@ -53,10 +54,9 @@ Instead it shows two things that are real:
 
 - **Provenance and credit line** — the documented ownership chain and how the
   museum acquired the work, for the ~830 objects where that is published.
-- **Last recorded sale** — an actual hammer price, shown only for the 96
-  paintings that carry a cited public auction record in Wikidata, each linked
-  back to its source. This is presented as a historical sale, never as a current
-  valuation or appraisal.
+- **Last recorded sale** — an actual auction price from a cited Wikidata record,
+  linked to a museum record when its Wikidata identifier matches. It is shown as
+  a historical sale, never as a current valuation or appraisal.
 
 Sorting by *Highest sale* filters to those priced works, since the rest have no
 price to rank by.
@@ -70,7 +70,7 @@ cp .env.example .env
 docker compose up -d   # Postgres on localhost:5432
 npm install
 npm run db:push        # create the schema
-npm run db:seed        # pull ~2,100 works from the public APIs
+npm run db:seed        # pull up to ~9,500 works from public sources
 npm run dev
 ```
 
@@ -82,7 +82,14 @@ If you would rather use a PostgreSQL you already have installed, skip the
 The seed script accepts per-source limits:
 
 ```bash
-npm run db:seed -- --aic=3000 --met=1500 --monuments=800 --market=200 --masterpieces=400
+npm run db:seed -- --aic=3000 --met=1500 --cleveland=4000 --monuments=800 --market=200 --masterpieces=400
+```
+
+To refresh only the Cleveland Museum's CC0 collection, without waiting for the
+Wikidata sources:
+
+```bash
+npm run db:cleveland -- --limit=4000
 ```
 
 Wikidata's query service allows roughly one request a minute and returns nothing

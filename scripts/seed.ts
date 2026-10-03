@@ -1,12 +1,13 @@
 import { setDefaultResultOrder } from "node:dns";
 import { fetchArtInstitute } from "./ingest/art-institute";
+import { fetchCleveland } from "./ingest/cleveland";
 import { fetchMarketSales } from "./ingest/market";
 import { fetchMasterpieces } from "./ingest/masterpieces";
 import { fetchMet } from "./ingest/met";
 import { fetchMonuments } from "./ingest/wikidata";
 import { enrichWithWikipedia } from "./ingest/wikipedia";
 import { deduplicateSlugs, persist, prisma } from "./ingest/persist";
-import { sleep } from "./ingest/shared";
+import { attachRecordedSales, sleep } from "./ingest/shared";
 
 // Node resolves AAAA records first, but several Wikimedia hosts are reachable
 // here only over IPv4 — without this every request to them fails with
@@ -24,8 +25,9 @@ const numericArg = (name: string, fallback: number): number => {
 };
 
 const main = async () => {
-  const aicLimit = numericArg("aic", 1200);
-  const metLimit = numericArg("met", 600);
+  const aicLimit = numericArg("aic", 3000);
+  const metLimit = numericArg("met", 1500);
+  const clevelandLimit = numericArg("cleveland", 4000);
   const monumentLimit = numericArg("monuments", 400);
   const marketLimit = numericArg("market", 200);
   const masterpieceLimit = numericArg("masterpieces", 400);
@@ -33,9 +35,10 @@ const main = async () => {
   console.log("Fetching from public museum APIs…");
 
   // The museum APIs are independent hosts, so they can run together.
-  const [aic, met] = await Promise.all([
+  const [aic, met, cleveland] = await Promise.all([
     fetchArtInstitute(aicLimit),
     fetchMet(metLimit),
+    fetchCleveland(clevelandLimit),
   ]);
 
   // The three Wikidata queries all hit one endpoint, which rate-limits hard
@@ -47,17 +50,19 @@ const main = async () => {
   await sleep(WDQS_GAP_MS);
   const masterpieces = await fetchMasterpieces(masterpieceLimit);
 
-  const works = deduplicateSlugs([
+  const works = deduplicateSlugs(attachRecordedSales([
     ...aic,
     ...met,
+    ...cleveland,
     ...monuments,
     ...market,
     ...masterpieces,
-  ]);
+  ], market));
 
   for (const [name, rows] of [
     ["art institute", aic],
     ["met", met],
+    ["cleveland", cleveland],
     ["monuments", monuments],
     ["market sales", market],
     ["masterpieces", masterpieces],

@@ -98,6 +98,33 @@ export const makeArtwork = (
   };
 };
 
+/** Copy a cited auction record onto source records for the same Wikidata work. */
+export const attachRecordedSales = (
+  works: readonly NormalisedArtwork[],
+  sales: readonly NormalisedArtwork[],
+): NormalisedArtwork[] => {
+  const byWikidataId = new Map<string, NormalisedArtwork>();
+  for (const sale of sales) {
+    if (sale.wikidataId && sale.salePrice !== null) {
+      byWikidataId.set(sale.wikidataId, sale);
+    }
+  }
+
+  return works.map((work) => {
+    const sale = work.wikidataId ? byWikidataId.get(work.wikidataId) : undefined;
+    if (!sale || work.salePrice !== null) return work;
+
+    return {
+      ...work,
+      salePrice: sale.salePrice,
+      saleCurrency: sale.saleCurrency,
+      saleDate: sale.saleDate,
+      saleYear: sale.saleYear,
+      saleSourceUrl: sale.saleSourceUrl,
+    };
+  });
+};
+
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Status codes worth retrying: throttling, bot-detection and server faults. */

@@ -75,7 +75,7 @@ model Artwork {
   id       String @id @default(cuid())
   slug     String @unique
   title    String
-  /// One of: painting | sculpture | monument | other
+  /// One of: painting | sculpture | artifact | monument | other
   category String @default("other")
 
   // Attribution
