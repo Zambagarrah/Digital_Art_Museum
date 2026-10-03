@@ -33,6 +33,48 @@ body {
   font-family: var(--font-inter), system-ui, sans-serif;
 }
 
+.artwork-mount {
+  position: relative;
+  isolation: isolate;
+  padding: clamp(5px, 0.8vw, 11px);
+  background:
+    linear-gradient(
+      90deg,
+      rgba(57, 36, 26, 0.78) 0,
+      rgba(133, 82, 48, 0.48) 2px,
+      transparent 8px,
+      transparent calc(100% - 8px),
+      rgba(126, 72, 39, 0.5) calc(100% - 2px),
+      rgba(54, 34, 24, 0.76) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(57, 36, 26, 0.72) 0,
+      rgba(133, 82, 48, 0.4) 2px,
+      transparent 8px,
+      transparent calc(100% - 8px),
+      rgba(126, 72, 39, 0.44) calc(100% - 2px),
+      rgba(54, 34, 24, 0.72) 100%
+    ),
+    repeating-linear-gradient(
+      113deg,
+      rgba(84, 65, 45, 0.055) 0 1px,
+      transparent 1px 10px
+    ),
+    linear-gradient(135deg, #ddd9cc, #c9c4b5 50%, #ded9cb);
+  clip-path: polygon(
+    0.4% 0.2%, 7% 0.5%, 14% 0.1%, 21% 0.4%, 28% 0.2%, 36% 0.6%,
+    43% 0.2%, 51% 0.5%, 59% 0.1%, 67% 0.4%, 75% 0.2%, 83% 0.5%,
+    91% 0.1%, 99.6% 0.4%, 99.8% 8%, 99.4% 16%, 99.9% 25%, 99.5% 34%,
+    99.8% 43%, 99.4% 52%, 99.9% 61%, 99.5% 70%, 99.8% 79%, 99.4% 88%,
+    99.7% 99.6%, 92% 99.3%, 84% 99.8%, 76% 99.4%, 68% 99.9%, 60% 99.5%,
+    52% 99.8%, 44% 99.4%, 36% 99.9%, 28% 99.5%, 20% 99.8%, 12% 99.4%,
+    0.3% 99.7%, 0.6% 91%, 0.2% 82%, 0.6% 73%, 0.2% 64%, 0.5% 55%,
+    0.1% 46%, 0.5% 37%, 0.2% 28%, 0.6% 19%, 0.2% 10%
+  );
+  filter: drop-shadow(0 20px 24px rgba(0, 0, 0, 0.72));
+}
+
 ::selection {
   background: var(--accent);
   color: #14120c;

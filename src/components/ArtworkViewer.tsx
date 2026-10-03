@@ -14,18 +14,6 @@ type Props = {
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 6;
 
-/** A quiet paper mount keeps the image distinct from the dark gallery. */
-const MOUNT_STYLE: React.CSSProperties = {
-  padding: "clamp(10px, 1.8vw, 24px)",
-  borderRadius: 1,
-  background: "#d8d6cf",
-  boxShadow: [
-    "inset 0 0 0 1px rgba(255, 255, 255, 0.52)",
-    "0 28px 56px -28px rgba(0, 0, 0, 0.9)",
-    "0 8px 18px -12px rgba(0, 0, 0, 0.72)",
-  ].join(", "),
-};
-
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
 
@@ -114,7 +102,7 @@ export const ArtworkViewer = ({
 
   return (
     <div>
-      <div style={matted ? MOUNT_STYLE : undefined}>
+      <div className={matted ? "artwork-mount" : undefined}>
         <div
           role="presentation"
           onWheel={onWheel}
