@@ -1,9 +1,5 @@
 # syntax=docker/dockerfile:1
 
-# Debian bookworm, not Alpine: Prisma's query engine links against glibc and
-# OpenSSL 3.0, which is exactly the `debian-openssl-3.0.x` binary target pinned
-# in schema.prisma. Bookworm is pinned deliberately — Debian trixie ships
-# OpenSSL 3.5 and would need a different engine.
 FROM node:24-bookworm-slim AS base
 RUN apt-get update \
   && apt-get install -y --no-install-recommends openssl ca-certificates \
@@ -13,7 +9,6 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 
 FROM base AS deps
-# `postinstall` runs `prisma generate`, so the schema must be present for `npm ci`.
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
 RUN npm ci
@@ -22,25 +17,16 @@ RUN npm ci
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# Prisma parses this string at build time but never opens a connection, and no
-# page is prerendered against the database, so a placeholder is enough.
 ENV DATABASE_URL="postgresql://build:build@127.0.0.1:5432/build"
 ENV NODE_ENV=production
 RUN node node_modules/prisma/build/index.js generate && npm run build
-
-# Next copies .env files into the standalone output by design. .dockerignore
-# should have kept them out of the build context entirely, but drop any that
-# slipped through *here* — deleting them in the runner would only add a whiteout
-# layer, leaving the credentials readable in the layer underneath.
-RUN rm -f .next/standalone/.env .next/standalone/.env.*
 
 
 FROM base AS runner
 ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0 \
-    HOME=/home/nextjs \
-    CHECKPOINT_DISABLE=1
+    HOME=/home/nextjs
 
 RUN groupadd --system --gid 1001 nodejs \
   && useradd --system --uid 1001 --gid nodejs --home-dir /home/nextjs --create-home nextjs
@@ -49,19 +35,17 @@ COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy prisma binary, client, and schema into the runner so the entrypoint
-# can run `prisma db push` at boot without needing the full node_modules.
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
-COPY --chown=nextjs:nodejs prisma ./prisma
+# Copy the FULL node_modules so prisma CLI has all its wasm/binary files,
+# then overwrite the generated prisma client with the one from deps.
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --from=deps --chown=nextjs:nodejs /app/prisma ./prisma
 
-COPY --chmod=0755 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# ISR writes rendered pages here at runtime. Everything below .next already
-# arrived with the right owner via --chown, so this stays non-recursive to avoid
-# rewriting the whole tree into another layer.
-RUN mkdir -p .next/cache && chown nextjs:nodejs .next .next/cache
+RUN rm -f .env .env.*
+
+RUN mkdir -p .next/cache && chown -R nextjs:nodejs .next
 
 USER nextjs
 EXPOSE 3000
