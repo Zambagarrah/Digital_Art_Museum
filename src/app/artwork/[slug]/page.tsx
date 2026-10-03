@@ -53,7 +53,7 @@ export default async function ArtworkPage({ params }: Props) {
           imageUrl={artwork.imageUrl ?? artwork.thumbUrl}
           iiifBaseUrl={artwork.iiifBaseUrl}
           backgroundColor={artwork.colorHex}
-          framed={artwork.category === "painting"}
+          matted={artwork.category === "painting"}
         />
 
         <div>
