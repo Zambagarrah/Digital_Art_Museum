@@ -75,18 +75,18 @@ export default async function HomePage() {
         </div>
 
         {heroWorks.length > 0 && (
-          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 overflow-hidden rounded-xl">
             {heroWorks.map((work) => (
               <Link
                 key={work.id}
                 href={`/artwork/${work.slug}`}
-                className="group relative block aspect-5/4 overflow-hidden border border-border bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                className="group relative block aspect-5/4 overflow-hidden bg-surface focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={imageSrc(work.thumbUrl) ?? work.thumbUrl!}
                   alt={work.title}
-                  className="h-full w-full object-contain p-1 transition-transform duration-500 group-hover:scale-[1.03] sm:p-2"
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                 />
                 <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 to-transparent px-2 pb-2 pt-7 sm:px-3 sm:pb-3">
                   <h2 className="truncate font-serif text-xs text-white sm:text-sm">
