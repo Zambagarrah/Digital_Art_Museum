@@ -52,32 +52,33 @@ export default async function BrowsePage({
   const { items, total, pageCount, facets } = await searchArtworks(query);
 
   return (
-    <div className="mx-auto max-w-[1600px] px-6 py-10">
-      <header className="mb-8">
-        <h1 className="font-serif text-3xl text-foreground">
+    <div className="browse-page mx-auto max-w-[1600px] px-6 py-10">
+      <header className="browse-page-heading mb-8">
+        <p className="browse-eyebrow">Digital Art Museum · Archive</p>
+        <h1 className="mt-2 font-serif text-3xl text-foreground">
           {headingFor(query.category, query.q, query.museum)}
         </h1>
-        <p className="mt-2 text-sm text-muted">
+        <p className="browse-result-count mt-2 text-sm text-muted">
           {total.toLocaleString()} {total === 1 ? "work" : "works"}
         </p>
       </header>
 
-      <div className="grid gap-10 lg:grid-cols-[220px_1fr]">
+      <div className="browse-layout grid gap-8 lg:grid-cols-[240px_1fr]">
         <FilterPanel
           query={query}
           categories={facets.categories}
           museums={facets.museums}
         />
 
-        <main>
-          <div className="mb-6 flex flex-wrap items-center gap-2">
-            <span className="text-xs uppercase tracking-widest text-muted">Sort</span>
+        <main className="browse-results">
+          <div className="browse-toolbar mb-6 flex flex-wrap items-center gap-2">
+            <span className="browse-toolbar-label text-xs uppercase tracking-widest text-muted">Sort</span>
             {SORTS.map((option) => (
               <Link
                 key={option.value}
                 href={buildHref(query, { sort: option.value, page: null })}
                 aria-current={query.sort === option.value ? "true" : undefined}
-                className={`rounded-full px-3 py-1 text-xs transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                className={`sort-option rounded-full px-3 py-1 text-xs transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                   query.sort === option.value
                     ? "bg-surface-raised text-accent"
                     : "text-muted hover:text-foreground"

@@ -43,7 +43,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           {children}
         </main>
 
-        <footer className="border-t border-border px-6 py-10 text-xs text-muted">
+        <footer className="site-footer border-t border-border px-6 py-10 text-xs text-muted">
           <div className="mx-auto max-w-[1600px]">
             Images and metadata courtesy of the Art Institute of Chicago, the
             Metropolitan Museum of Art, the Cleveland Museum of Art and Wikimedia

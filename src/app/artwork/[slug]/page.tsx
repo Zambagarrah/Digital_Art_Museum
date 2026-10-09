@@ -59,8 +59,8 @@ export default async function ArtworkPage({ params }: Props) {
   const summary = describeArtwork(artwork, facts, provenance);
 
   return (
-    <article className="mx-auto max-w-[1600px] px-6 py-10">
-      <div className="grid gap-12 lg:grid-cols-[1.4fr_1fr]">
+    <article className="artwork-detail-page mx-auto max-w-[1600px] px-6 py-10">
+      <div className="artwork-detail-layout grid gap-10 lg:grid-cols-[1.25fr_0.75fr]">
         <ArtworkViewer
           title={artwork.title}
           imageUrl={artwork.imageUrl ?? artwork.thumbUrl}
@@ -69,7 +69,7 @@ export default async function ArtworkPage({ params }: Props) {
           matted={artwork.category === "painting"}
         />
 
-        <div>
+        <div className="artwork-information">
           <p className="text-xs uppercase tracking-[0.2em] text-accent">
             {artwork.category}
           </p>
@@ -136,7 +136,7 @@ export default async function ArtworkPage({ params }: Props) {
           )}
 
           {price && (
-            <section className="mt-8 rounded-lg border border-border bg-surface p-5">
+            <section className="price-panel mt-8 rounded-lg border border-border bg-surface p-5">
               <h2 className="text-xs uppercase tracking-widest text-muted">
                 Last recorded sale
               </h2>
@@ -171,7 +171,7 @@ export default async function ArtworkPage({ params }: Props) {
             </section>
           )}
 
-          <dl className="mt-8">
+          <dl className="artwork-metadata mt-8">
             <Detail label="Medium" value={artwork.medium} />
             <Detail label="Dimensions" value={artwork.dimensions} />
             <Detail label="Culture" value={artwork.culture} />
@@ -314,7 +314,7 @@ export default async function ArtworkPage({ params }: Props) {
       </div>
 
       {related.length > 0 && (
-        <section className="mt-24">
+        <section className="related-works mt-24">
           <h2 className="mb-6 font-serif text-2xl text-foreground">Related works</h2>
           <ArtworkGrid artworks={related} />
         </section>

@@ -101,7 +101,7 @@ export const ArtworkViewer = ({
   }
 
   return (
-    <div>
+    <div className="artwork-viewer">
       <div className={matted ? "artwork-mount" : undefined}>
         <div
           role="presentation"
@@ -110,7 +110,7 @@ export const ArtworkViewer = ({
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
-          className={`relative overflow-hidden ${
+          className={`artwork-viewer-stage relative overflow-hidden ${
             matted ? "border border-black/35" : "rounded-xl border border-border"
           } ${zoomed ? "cursor-grab active:cursor-grabbing" : "cursor-zoom-in"}`}
           style={{ backgroundColor: backgroundColor ?? "var(--surface)" }}

@@ -25,7 +25,7 @@ const FacetLink = ({
     <Link
       href={href}
       aria-current={active ? "true" : undefined}
-      className={`flex items-baseline justify-between gap-3 rounded px-2 py-1.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+      className={`facet-row flex items-baseline justify-between gap-3 rounded px-2 py-1.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
         active
           ? "bg-surface-raised text-accent"
           : "text-muted hover:bg-surface hover:text-foreground"
@@ -51,7 +51,7 @@ const FacetChip = ({
   <Link
     href={href}
     aria-current={active ? "page" : undefined}
-    className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+    className={`facet-chip inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
       active
         ? "border-accent bg-surface-raised text-accent"
         : "border-border text-muted hover:border-accent hover:text-foreground"
@@ -81,7 +81,7 @@ export const FilterPanel = ({ query, categories, museums }: Props) => {
     query.to !== null;
 
   return (
-    <aside aria-label="Filters" className="space-y-8">
+    <aside aria-label="Filters" className="filter-panel space-y-8">
       {hasFilters && (
         <Link
           href={buildHref(query, {

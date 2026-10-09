@@ -23,11 +23,11 @@ export const ArtworkCard = ({ artwork, priority = false }: Props) => {
   return (
     <Link
       href={`/artwork/${artwork.slug}`}
-      className="group mb-4 block break-inside-avoid rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+      className="artwork-card group mb-4 block break-inside-avoid rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
     >
       <figure className="overflow-hidden rounded-lg">
         <div
-          className="relative w-full overflow-hidden rounded-lg"
+          className="artwork-card-media relative w-full overflow-hidden rounded-lg"
           style={{ backgroundColor: artwork.colorHex ?? "var(--surface)" }}
         >
           {thumb ? (
@@ -51,7 +51,7 @@ export const ArtworkCard = ({ artwork, priority = false }: Props) => {
           )}
         </div>
 
-        <figcaption className="px-1 pt-3">
+        <figcaption className="artwork-card-caption px-1 pt-3">
           <h3 className="font-serif text-sm leading-snug text-foreground transition-colors group-hover:text-accent">
             {artwork.title}
           </h3>
@@ -67,7 +67,7 @@ export const ArtworkCard = ({ artwork, priority = false }: Props) => {
 
 /** Masonry grid wrapper shared by the landing rails and the browse results. */
 export const ArtworkGrid = ({ artworks }: { artworks: ArtworkCardData[] }) => (
-  <div className="columns-2 gap-4 sm:columns-3 lg:columns-4 xl:columns-5 2xl:columns-6">
+  <div className="artwork-grid columns-2 gap-4 sm:columns-3 lg:columns-4 xl:columns-5 2xl:columns-6">
     {artworks.map((artwork, index) => (
       <ArtworkCard key={artwork.id} artwork={artwork} priority={index < 6} />
     ))}

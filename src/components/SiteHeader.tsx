@@ -17,10 +17,10 @@ export const SiteHeader = () => {
   const closeMenu = () => setMenuOpen(false);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
-      <div className="mx-auto flex max-w-[1600px] items-center gap-8 px-6 py-4">
-        <Link href="/" className="group flex shrink-0 items-baseline gap-2" onClick={closeMenu}>
-          <span className="font-serif text-lg tracking-tight text-foreground">
+    <header className="site-header sticky top-0 z-40 backdrop-blur">
+      <div className="site-header-inner mx-auto flex max-w-[1600px] items-center gap-8 px-6 py-4">
+        <Link href="/" className="site-brand group flex shrink-0 items-baseline gap-2" onClick={closeMenu}>
+          <span className="font-serif text-lg tracking-tight">
             Digital Art Museum
           </span>
           <span
@@ -29,13 +29,13 @@ export const SiteHeader = () => {
           />
         </Link>
 
-        <nav aria-label="Collections" className="hidden flex-1 xl:block">
+        <nav aria-label="Collections" className="site-navigation hidden flex-1 xl:block">
           <ul className="flex items-center gap-5 text-sm">
             {NAV.map((item) => (
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className="text-muted transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+                  className="site-nav-link transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
                 >
                   {item.label}
                 </Link>
@@ -44,13 +44,13 @@ export const SiteHeader = () => {
           </ul>
         </nav>
 
-        <div className="ml-auto hidden w-full max-w-sm xl:block">
+        <div className="site-search ml-auto hidden w-full max-w-sm xl:block">
           <SearchBar />
         </div>
 
         <button
           type="button"
-          className="ml-auto flex size-10 shrink-0 items-center justify-center text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent xl:hidden"
+          className="site-menu-toggle ml-auto flex size-10 shrink-0 items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent xl:hidden"
           aria-label={menuOpen ? "Close navigation" : "Open navigation"}
           aria-expanded={menuOpen}
           aria-controls="mobile-navigation"
